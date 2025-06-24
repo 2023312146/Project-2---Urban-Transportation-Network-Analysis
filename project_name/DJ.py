@@ -36,3 +36,29 @@ class TransportNetwork:
             current = previous[current]
         path.reverse()
         return path, distances[end_id]
+
+    def find_all_paths(self, start_id, end_id, path=None, distance=0):
+        if path is None:
+            path = []
+        path = path + [start_id]
+        if start_id == end_id:
+            return [(path, distance)]
+        if start_id not in self.routes:
+            return []
+        paths = []
+        for neighbor, weight in self.routes[start_id]:
+            if neighbor not in path:
+                newpaths = self.find_all_paths(neighbor, end_id, path, distance + weight)
+                for p in newpaths:
+                    paths.append(p)
+        return paths
+
+    def print_all_paths_with_shortest(self, start_id, end_id):
+        all_paths = self.find_all_paths(start_id, end_id)
+        if not all_paths:
+            print(f"No path from {start_id} to {end_id}")
+            return
+        min_distance = min(dist for _, dist in all_paths)
+        for path, dist in all_paths:
+            mark = " <--- shortest" if dist == min_distance else ""
+            print(f"Path: {path}, Distance: {dist}{mark}")

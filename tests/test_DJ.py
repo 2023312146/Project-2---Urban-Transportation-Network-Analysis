@@ -28,5 +28,18 @@ class TestTransportNetwork(unittest.TestCase):
         self.assertEqual(path2, [1, 2])
         self.assertEqual(distance2, 5)
 
+    def test_print_all_paths_with_shortest(self):
+        import io
+        import sys
+        captured_output = io.StringIO()
+        sys_stdout = sys.stdout
+        sys.stdout = captured_output
+        self.network.print_all_paths_with_shortest(1, 3)
+        sys.stdout = sys_stdout
+        output = captured_output.getvalue()
+        # 检查所有路径和最短路径标注
+        self.assertIn("Path: [1, 2, 3], Distance: 15 <--- shortest", output)
+        self.assertIn("Path: [1, 3], Distance: 20", output)
+
 if __name__ == '__main__':
     unittest.main()
