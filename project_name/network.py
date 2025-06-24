@@ -1,19 +1,21 @@
+from project_name.data_structures import Stop
+
 class TransportNetwork:
     def __init__(self):
-        self.stops = set()
-        self.stop_details = {}
-        self.routes = {}
-
-    def add_stop(self, stop_id, details=None):
-        self.stops.add(stop_id)
-        if details:
-            self.stop_details[stop_id] = details
-        if stop_id not in self.routes:
-            self.routes[stop_id] = []
-
-    def add_route(self, start_id, end_id, distance):
-        if start_id not in self.stops:
-            self.add_stop(start_id)
-        if end_id not in self.stops:
-            self.add_stop(end_id)
-        self.routes[start_id].append((end_id, distance)) 
+        self.adjacency_list = {}  # 邻接表：{Stop对象: [(Stop对象, 距离), ...]}
+    
+    def add_stop(self, stop):
+        if not isinstance(stop, Stop):
+            raise TypeError("Argument must be a Stop object")
+        if stop not in self.adjacency_list:
+            self.adjacency_list[stop] = []
+    
+    def add_route(self, from_stop, to_stop, distance):
+        if from_stop not in self.adjacency_list:
+            raise ValueError("From stop not found in network")
+        if to_stop not in self.adjacency_list:
+            raise ValueError("To stop not found in network")
+        if distance < 0:
+            raise ValueError("Distance must be non-negative")
+        
+        self.adjacency_list[from_stop].append((to_stop, distance))
