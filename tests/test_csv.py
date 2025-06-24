@@ -1,7 +1,8 @@
 import unittest
 import os
-from project_name.network import TransportNetwork
-from project_name.io import load_stops_from_csv, load_routes_from_csv
+from project.module.network import TransportNetwork
+from project.module.stop import Stop, ZoneType  
+from project.module.get_from_csv import load_stops_from_csv, load_routes_from_csv    
 
 class TestIO(unittest.TestCase):
 

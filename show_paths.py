@@ -1,4 +1,4 @@
-from project_name.network import TransportNetwork
+from project_name.module.network import TransportNetwork
 from project_name.io import load_stops_from_csv, load_routes_from_csv
 from project_name.algorithms import find_all_paths
 

@@ -1,4 +1,4 @@
-from project_name.data_structures import Stop
+from module.stop import Stop
 
 class TransportNetwork:
     def __init__(self):

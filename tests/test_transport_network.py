@@ -1,39 +1,6 @@
 import unittest
-from .data_structures import Stop, ZoneType
-from .network import TransportNetwork
-
-class TestStop(unittest.TestCase):
-    def test_stop_creation(self):
-        stop = Stop("S1", "Central Station", 48.8584, 2.2945, ZoneType.COMMERCIAL)
-        self.assertEqual(stop.stop_ID, "S1")
-        self.assertEqual(stop.name, "Central Station")
-        self.assertEqual(stop.zone_type, ZoneType.COMMERCIAL)
-
-    def test_invalid_zone_type(self):
-        with self.assertRaises(TypeError):
-            Stop("S2", "Residential Stop", 48.86, 2.30, "Residential")
-
-    def test_zone_type_setter(self):
-        stop = Stop("S3", "Industrial Zone", 48.80, 2.35, ZoneType.INDUSTRIAL)
-        self.assertEqual(stop.zone_type, ZoneType.INDUSTRIAL)
-        stop.zone_type = ZoneType.MIXED
-        self.assertEqual(stop.zone_type, ZoneType.MIXED)
-        with self.assertRaises(TypeError):
-            stop.zone_type = "some_string"
-
-    def test_repr(self):
-        stop = Stop("S4", "Mixed Zone", 48.90, 2.40, ZoneType.MIXED)
-        expected_repr = "Stop(ID=S4, Name='Mixed Zone', Zone='Mixed')"
-        self.assertEqual(repr(stop), expected_repr)
-
-    def test_comparison(self):
-        stop1 = Stop("S1", "Stop 1", 0, 0, ZoneType.RESIDENTIAL)
-        stop2 = Stop("S2", "Stop 2", 0, 0, ZoneType.RESIDENTIAL)
-        stop1_clone = Stop("S1", "Stop 1", 0, 0, ZoneType.RESIDENTIAL)
-        self.assertTrue(stop1 < stop2)
-        self.assertFalse(stop2 < stop1)
-        self.assertEqual(stop1, stop1_clone)
-        self.assertNotEqual(stop1, stop2)
+from ..module.network import TransportNetwork  # 修改导入路径
+from ..module.stop import Stop, ZoneType  # 修改导入路径
 
 class TestTransportNetwork(unittest.TestCase):
     def setUp(self):
@@ -68,4 +35,4 @@ class TestTransportNetwork(unittest.TestCase):
             self.network.add_route(self.stop1, self.stop2, -5)
 
 if __name__ == '__main__':
-    unittest.main() 
+    unittest.main()

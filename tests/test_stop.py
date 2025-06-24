@@ -1,5 +1,5 @@
 import unittest
-from project_name.data_structures import Stop, ZoneType
+from project.module.stop import Stop, ZoneType  
 
 class TestStop(unittest.TestCase):
     def test_stop_creation(self):
@@ -42,4 +42,4 @@ class TestStop(unittest.TestCase):
         self.assertEqual(len(s), 3)
 
 if __name__ == '__main__':
-    unittest.main() 
+    unittest.main()

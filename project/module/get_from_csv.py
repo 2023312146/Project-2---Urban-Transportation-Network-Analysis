@@ -1,5 +1,5 @@
 import csv
-from .network import TransportNetwork
+from module.network import TransportNetwork
 
 def load_stops_from_csv(network, file_path):
     with open(file_path, 'r', encoding='utf-8') as file:

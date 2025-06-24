@@ -1,6 +1,6 @@
 import unittest
-from project_name.network import TransportNetwork
-from project_name.data_structures import Stop, ZoneType
+from project.module.network import TransportNetwork  
+from project.module.stop import Stop, ZoneType  
 
 class TestNetwork(unittest.TestCase):
     def setUp(self):

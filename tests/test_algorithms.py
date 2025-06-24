@@ -1,6 +1,6 @@
 import unittest
-from project_name.network import TransportNetwork
-from project_name.algorithms import dijkstra, find_all_paths
+from project.module.network import TransportNetwork
+from project.algorithms import dijkstra, find_all_paths
 
 class TestAlgorithms(unittest.TestCase):
 
