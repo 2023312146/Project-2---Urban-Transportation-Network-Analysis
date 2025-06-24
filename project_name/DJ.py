@@ -1,16 +1,43 @@
+import csv
+
 class TransportNetwork:
     def __init__(self):
         self.stops = set()
-        self.routes = dict()  # {start: list of (end, distance)}
-
+        self.stop_details = {}  # 存储站点详细信息
+        self.routes = {}  # {start: list of (end, distance)}
+    
+    def load_stops_from_csv(self, file_path):
+        with open(file_path, 'r', encoding='utf-8') as file:
+            reader = csv.DictReader(file)
+            for row in reader:
+                stop_id = int(row['stop_id'])
+                self.add_stop(stop_id)
+                # 存储站点详细信息
+                self.stop_details[stop_id] = {
+                    'name': row['name'],
+                    'latitude': float(row['latitude']),
+                    'longitude': float(row['longitude']),
+                    'zone_type': row['zone_type']
+                }
+    
+    def load_routes_from_csv(self, file_path):
+        with open(file_path, 'r', encoding='utf-8') as file:
+            reader = csv.DictReader(file, fieldnames=['start_stop_id', 'end_stop_id', 'distance'])
+            next(reader)  # 跳过标题行
+            for row in reader:
+                start = int(row['start_stop_id'])
+                end = int(row['end_stop_id'])
+                distance = float(row['distance'])
+                self.add_route(start, end, distance)
+    
     def add_stop(self, stop_id):
         self.stops.add(stop_id)
         if stop_id not in self.routes:
             self.routes[stop_id] = []
-
+    
     def add_route(self, start_id, end_id, distance):
         if start_id not in self.routes:
-            self.routes[start_id] = []
+            self.add_stop(start_id)
         self.routes[start_id].append((end_id, distance))
 
     def dijkstra(self, start_id, end_id):
