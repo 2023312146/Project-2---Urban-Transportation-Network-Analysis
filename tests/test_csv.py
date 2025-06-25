@@ -12,8 +12,8 @@ class TestIO(unittest.TestCase):
         self.stops_file = 'test_stops.csv'
         with open(self.stops_file, 'w', newline='') as f:
             f.write("stop_id,name,latitude,longitude,zone_type\n")
-            f.write("1,A,0,0,urban\n")
-            f.write("2,B,1,1,suburban\n")
+            f.write("1,A,0,0,URBAN\n")  # 改为大写URBAN
+            f.write("2,B,1,1,RESIDENTIAL\n")  # 改为RESIDENTIAL
 
         self.routes_file = 'test_routes.csv'
         with open(self.routes_file, 'w', newline='') as f:
@@ -29,13 +29,17 @@ class TestIO(unittest.TestCase):
         self.assertEqual(len(self.network.stops), 2)
         self.assertIn(1, self.network.stops)
         self.assertIn(2, self.network.stops)
-        self.assertEqual(self.network.stop_details[1]['name'], 'A')
+        # 修改为直接访问Stop对象的属性
+        self.assertEqual(self.network.stops[1].name, 'A')
 
     def test_load_routes(self):
         # Stops need to be loaded first for routes to be added correctly
         load_stops_from_csv(self.network, self.stops_file)
         load_routes_from_csv(self.network, self.routes_file)
-        self.assertIn((2, 10), self.network.routes[1])
+        # 修改为检查邻接表中的连接
+        stop1 = self.network.stops[1]
+        stop2 = self.network.stops[2]
+        self.assertIn((stop2, 10.0), self.network.adjacency_list[stop1])
 
 if __name__ == '__main__':
-    unittest.main() 
+    unittest.main()

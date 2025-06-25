@@ -1,0 +1,6 @@
+stop_id,stop_name,latitude,longitude
+1,"Stop A",0,0
+2,"Stop B",1,1
+3,"Stop C",2,2
+4,"Stop D",3,3
+5,"Stop E",4,4 
