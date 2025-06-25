@@ -1,43 +1,50 @@
-from project_name.module.network import TransportNetwork
-from project_name.io import load_stops_from_csv, load_routes_from_csv
-from project_name.algorithms import find_all_paths
+from project.module.network import TransportNetwork
+from project.algorithms.algorithms import dijkstra
+import os
 
 def main():
-    """
-    Main function to run the transport network analysis.
-    """
-    # Create a transport network
-    network = TransportNetwork()
+    # -- 构建相对于脚本位置的数据文件路径 --
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    stops_file = os.path.join(script_dir, 'data', 'stops.csv')
+    routes_file = os.path.join(script_dir, 'data', 'routes.csv')
 
-    # Load data from CSV files
-    # Make sure the data files are in a 'data' directory relative to where this script is run
+    # 1. 从CSV加载网络
+    print("正在加载交通网络...")
     try:
-        load_stops_from_csv(network, 'data/stops.csv')
-        load_routes_from_csv(network, 'data/routes.csv')
+        network = TransportNetwork.load_stops_from_csv(stops_file)
+        network.load_routes_from_csv(routes_file)
+        print(f"网络加载成功。共加载 {len(network.stops)} 个站点和 {sum(len(routes) for routes in network.adjacency_list.values())} 条路线。")
     except FileNotFoundError as e:
-        print(f"Error: {e}. Make sure you are running this from the 'efrei2025' directory and the 'data' directory exists.")
+        print(f"错误：找不到数据文件 {e.filename}。请检查文件路径。")
         return
 
-    # Define start and end points
-    start_stop_id = 2
-    end_stop_id = 7
+    # 2. 定义起点和终点ID
+    start_id = 1
+    end_id = 5
 
-    # Find all paths between start and end points
-    all_paths = find_all_paths(network, start_stop_id, end_stop_id)
+    # 3. 获取Stop对象
+    start_stop = network.get_stop_by_id(start_id)
+    end_stop = network.get_stop_by_id(end_id)
 
-    # Print the results
-    if not all_paths:
-        print(f"No path found from stop {start_stop_id} to {end_stop_id}.")
+    if not start_stop or not end_stop:
+        print(f"错误：无法在网络中找到ID为 {start_id} 或 {end_id} 的站点。")
         return
 
-    # Find the shortest distance among all paths
-    min_distance = min(dist for _, dist in all_paths)
+    print(f"\n正在查找从 '{start_stop.name}' (ID: {start_id}) 到 '{end_stop.name}' (ID: {end_id}) 的最短路径...")
 
-    print(f"All paths from stop {start_stop_id} to {end_stop_id}:")
-    for path, dist in all_paths:
-        # Add a marker for the shortest path
-        mark = " <--- shortest" if abs(dist - min_distance) < 1e-9 else ""
-        print(f"Path: {path}, Distance: {dist:.2f}{mark}")
+    # 4. 运行Dijkstra算法
+    path, distance = dijkstra(network, start_stop, end_stop)
+
+    # 5. 打印结果
+    if path:
+        print("\n----------- 查找结果 -----------")
+        print(f"最短距离: {distance:.2f}")
+        print("路径:")
+        path_str = " -> ".join([stop.name for stop in path])
+        print(path_str)
+        print("---------------------------------")
+    else:
+        print("\n未找到从起点到终点的有效路径。")
 
 if __name__ == '__main__':
     main()

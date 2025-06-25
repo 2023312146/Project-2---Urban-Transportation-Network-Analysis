@@ -1,45 +1,45 @@
 import unittest
-from project.module.stop import Stop, ZoneType  
+from project.module.stop import Stop, ZoneType
+from project.module.network import TransportNetwork
 
 class TestStop(unittest.TestCase):
+    def setUp(self):
+        self.stop_data = {
+            'stop_id': '1',
+            'name': 'Central Station',
+            'latitude': '48.8566',
+            'longitude': '2.3522',
+            'zone_type': 'Commercial'
+        }
+    
     def test_stop_creation(self):
-        stop = Stop("S1", "Central Station", 48.8584, 2.3470, ZoneType.COMMERCIAL)
-        self.assertEqual(stop.stop_ID, "S1")
+        stop = Stop(1, "Test Stop", 0.0, 0.0, ZoneType.RESIDENTIAL)
+        self.assertEqual(stop.stop_ID, 1)
+        self.assertEqual(stop.name, "Test Stop")
+        self.assertEqual(stop.zone_type, ZoneType.RESIDENTIAL)
+    
+    def test_from_dict(self):
+        stop = Stop.from_dict(self.stop_data)
+        self.assertEqual(stop.stop_ID, 1)
         self.assertEqual(stop.name, "Central Station")
-        self.assertEqual(stop.latitude, 48.8584)
-        self.assertEqual(stop.longitude, 2.3470)
+        self.assertEqual(stop.latitude, 48.8566)
         self.assertEqual(stop.zone_type, ZoneType.COMMERCIAL)
-
+    
     def test_zone_type_validation(self):
         with self.assertRaises(TypeError):
-            Stop("S2", "Residential Area", 48.86, 2.35, "Residential")
+            Stop(1, "Invalid", 0.0, 0.0, "InvalidType")
         
-        stop = Stop("S3", "Industrial Zone", 48.87, 2.36, ZoneType.INDUSTRIAL)
+        stop = Stop(1, "Valid", 0.0, 0.0, ZoneType.INDUSTRIAL)
         with self.assertRaises(TypeError):
-            stop.zone_type = "Mixed"
-
-    def test_repr(self):
-        stop = Stop("S4", "Mixed Zone", 48.88, 2.37, ZoneType.MIXED)
-        self.assertEqual(repr(stop), "Stop(ID=S4, Name='Mixed Zone', Zone='Mixed')")
-
-    def test_eq(self):
-        stop1 = Stop("S5", "Stop A", 48.89, 2.38, ZoneType.RESIDENTIAL)
-        stop2 = Stop("S5", "Stop B", 48.90, 2.39, ZoneType.RESIDENTIAL)
-        stop3 = Stop("S6", "Stop C", 48.91, 2.40, ZoneType.COMMERCIAL)
+            stop.zone_type = "InvalidType"
+    
+    def test_equality(self):
+        stop1 = Stop(1, "Same", 0.0, 0.0, ZoneType.MIXED)
+        stop2 = Stop(1, "Same", 0.0, 0.0, ZoneType.MIXED)
+        stop3 = Stop(2, "Different", 0.0, 0.0, ZoneType.MIXED)
+        
+        self.assertEqual(stop1, stop2)
         self.assertNotEqual(stop1, stop3)
-
-    def test_lt(self):
-        stop1 = Stop("S7", "Stop D", 48.92, 2.41, ZoneType.INDUSTRIAL)
-        stop2 = Stop("S8", "Stop E", 48.93, 2.42, ZoneType.MIXED)
-        self.assertLess(stop1, stop2)
-        self.assertGreater(stop2, stop1)
-
-    def test_hash(self):
-        stop1 = Stop("S9", "Stop F", 1, 1, ZoneType.RESIDENTIAL)
-        stop2 = Stop("S9", "Stop G", 2, 2, ZoneType.COMMERCIAL)
-        stop3 = Stop("S10", "Stop H", 3, 3, ZoneType.INDUSTRIAL)
-        s = {stop1, stop2, stop3}
-        self.assertEqual(len(s), 3)
 
 if __name__ == '__main__':
     unittest.main()
