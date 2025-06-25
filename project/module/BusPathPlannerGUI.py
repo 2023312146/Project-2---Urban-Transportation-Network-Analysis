@@ -7,8 +7,6 @@ sys.path.append(project_root)
 from PyQt5.QtWidgets import (QMainWindow, QGraphicsView, QGraphicsScene, QGraphicsEllipseItem, QGraphicsTextItem, QGraphicsLineItem, QGraphicsPolygonItem, QVBoxLayout, QWidget, QLabel, QHBoxLayout, QPushButton, QInputDialog, QMessageBox)
 from PyQt5.QtCore import Qt, QPointF
 from PyQt5.QtGui import QColor, QPen, QPainter, QFont, QPolygonF, QBrush
-from project.module.network_data import NetworkDataManager
-from project.module.path_analysis import PathAnalyzer
 
 class BusNetworkVisualization(QMainWindow):
     def __init__(self, data_manager, path_analyzer):
