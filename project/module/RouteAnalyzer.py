@@ -167,11 +167,20 @@ class PathAnalyzer:
         }
 
     def find_highest_degree_station(self):
-        """查找连接数最多的站点"""
+        """查找入度和出度之和最多的站点"""
         max_degree = 0
         hub_station = None
+        # 先统计所有站点的出度
+        out_degrees = {station_id: len(station["connections"]) for station_id, station in self.data_manager.stations.items()}
+        # 再统计所有站点的入度
+        in_degrees = {station_id: 0 for station_id in self.data_manager.stations}
         for station_id, station in self.data_manager.stations.items():
-            degree = len(station["connections"])
+            for to_id in station["connections"]:
+                if to_id in in_degrees:
+                    in_degrees[to_id] += 1
+        # 计算总度数
+        for station_id in self.data_manager.stations:
+            degree = out_degrees.get(station_id, 0) + in_degrees.get(station_id, 0)
             if degree > max_degree:
                 max_degree = degree
                 hub_station = station_id

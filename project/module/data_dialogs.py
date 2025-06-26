@@ -106,8 +106,14 @@ class DataDialogs:
         msg.setStyleSheet(self.get_messagebox_style())
         if highest_degree_station_id:
             station = self.data_manager.stations[highest_degree_station_id]
+            out_degree = len(station['connections'])
+            in_degree = 0
+            for s in self.data_manager.stations.values():
+                if highest_degree_station_id in s['connections']:
+                    in_degree += 1
+            total_degree = in_degree + out_degree
             msg.setWindowTitle("Highest Degree Station")
-            msg.setText(f"<b>{station['name']}</b><br>Connections: {len(station['connections'])}")
+            msg.setText(f"<b>{station['name']}</b><br>Degree (in+out): {total_degree} (in: {in_degree}, out: {out_degree})")
         else:
             msg.setWindowTitle("Highest Degree Station")
             msg.setText("No stations available")

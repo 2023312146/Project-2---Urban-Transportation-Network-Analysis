@@ -1,3 +1,5 @@
+from project.module.stop import ZoneType  # 确保导入ZoneType
+
 class NetworkDataManager:
     def __init__(self):
         self.stations = {}
@@ -35,13 +37,20 @@ class NetworkDataManager:
         view_height = 900
         padding = 80
         
+        zone_type_wait_map = {
+            "Residential": 2,
+            "Commercial": 4,
+            "Industrial": 3,
+            "Mixed": 3
+        }
+        
         for i, (name, (lat, lon), stype) in enumerate(zip(station_names, coordinates, station_types), start=1):
             station_id = str(i)
             norm_lat = (lat - min_lat) / (max_lat - min_lat)
             norm_lon = (lon - min_lon) / (max_lon - min_lon)
             x = padding + norm_lon * (view_width - 2*padding)
             y = padding + (1 - norm_lat) * (view_height - 2*padding)
-            
+            wait_time = zone_type_wait_map.get(stype, 3)
             self.stations[station_id] = {
                 "id": station_id,
                 "name": name,
@@ -50,7 +59,7 @@ class NetworkDataManager:
                 "x": x,
                 "y": y,
                 "type": stype,
-                "wait_time": 5,
+                "wait_time": wait_time,
                 "connections": []
             }
             self.station_name_to_id[name] = station_id
@@ -82,12 +91,18 @@ class NetworkDataManager:
             3: {"id": 3, "name": "线路3", "color": (0, 0, 255), "stations": [self.station_name_to_id[name] for name in ["Saint-Lazare", "Chatelet", "Bastille", "Montparnasse"]]}
         }
 
-    def add_station(self, name, x, y, station_type, wait_time=5):
+    def add_station(self, name, x, y, station_type, wait_time=None):
         if name in self.station_name_to_id:
             raise ValueError(f"Station {name} already exists")
-        
         new_id = str(max([int(id) for id in self.stations.keys()] + [0]) + 1)
-        
+        zone_type_wait_map = {
+            "Residential": 2,
+            "Commercial": 4,
+            "Industrial": 3,
+            "Mixed": 3
+        }
+        if wait_time is None:
+            wait_time = zone_type_wait_map.get(station_type, 3)
         self.stations[new_id] = {
             "id": new_id,
             "name": name,
