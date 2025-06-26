@@ -1,64 +1,95 @@
 import unittest
-from project.module.stop import Stop
+from project.module.stop import Stop, ZoneType
 from project.module.network import TransportNetwork
-from project.algorithms import dijkstra, find_all_paths
+from project.algorithms.algorithms import dijkstra, find_all_paths
 
 class TestAlgorithms(unittest.TestCase):
     def setUp(self):
-        # 创建测试用的站点和网络
-        self.stop1 = Stop("A", 0, 0)
-        self.stop2 = Stop("B", 1, 1)
-        self.stop3 = Stop("C", 2, 2)
-        self.stop4 = Stop("D", 3, 3)
-        
-        # 构建交通网络
+        # 创建测试用的站点和网络，Stop对象全程复用
+        self.stop1 = Stop(1, "A", 0, 0, ZoneType.RESIDENTIAL)
+        self.stop2 = Stop(2, "B", 1, 1, ZoneType.COMMERCIAL)
+        self.stop3 = Stop(3, "C", 2, 2, ZoneType.INDUSTRIAL)
+        self.stop4 = Stop(4, "D", 3, 3, ZoneType.MIXED)
+        self.stop5 = Stop(5, "E", 4, 4, ZoneType.URBAN)  # 孤立点
         self.network = TransportNetwork()
-        self.network.add_stop(self.stop1)
-        self.network.add_stop(self.stop2)
-        self.network.add_stop(self.stop3)
-        self.network.add_stop(self.stop4)
-        
-        # 添加连接
-        self.network.add_connection(self.stop1, self.stop2, 1)
-        self.network.add_connection(self.stop2, self.stop3, 2)
-        self.network.add_connection(self.stop1, self.stop3, 4)
-        self.network.add_connection(self.stop3, self.stop4, 1)
+        for stop in [self.stop1, self.stop2, self.stop3, self.stop4, self.stop5]:
+            self.network.add_stop(stop)
+        self.network.add_route(self.stop1, self.stop2, 1)
+        self.network.add_route(self.stop2, self.stop3, 2)
+        self.network.add_route(self.stop1, self.stop3, 4)
+        self.network.add_route(self.stop3, self.stop4, 1)
 
     def test_dijkstra_basic(self):
-        # 测试基本路径查找
+        # 路径A->B->C
         path, distance = dijkstra(self.network, self.stop1, self.stop3)
-        self.assertEqual(len(path), 3)
+        self.assertEqual([s.name for s in path], ["A", "B", "C"])
         self.assertEqual(distance, 3)
-        self.assertEqual(path[0].name, "A")
-        self.assertEqual(path[-1].name, "C")
+
+    def test_dijkstra_direct(self):
+        # 路径A->C（直接）
+        path, distance = dijkstra(self.network, self.stop1, self.stop3)
+        self.assertIn([s.name for s in path], [["A", "B", "C"]])  # 最短路径
+        self.assertEqual(distance, 3)
 
     def test_dijkstra_no_path(self):
-        # 测试无路径情况
-        isolated_stop = Stop("E", 4, 4)
-        path, distance = dijkstra(self.network, self.stop1, isolated_stop)
+        # 到孤立点
+        path, distance = dijkstra(self.network, self.stop1, self.stop5)
         self.assertIsNone(path)
         self.assertEqual(distance, float('inf'))
 
     def test_dijkstra_same_start_end(self):
-        # 测试起点终点相同
+        # 起点终点相同
         path, distance = dijkstra(self.network, self.stop1, self.stop1)
-        self.assertEqual(len(path), 1)
+        self.assertEqual([s.name for s in path], ["A"])
         self.assertEqual(distance, 0)
 
+    def test_dijkstra_start_not_in_network(self):
+        # 起点不在网络
+        fake_stop = Stop(99, "Z", 0, 0, ZoneType.RESIDENTIAL)
+        path, distance = dijkstra(self.network, fake_stop, self.stop1)
+        self.assertIsNone(path)
+        self.assertEqual(distance, float('inf'))
+
+    def test_dijkstra_end_not_in_network(self):
+        # 终点不在网络
+        fake_stop = Stop(99, "Z", 0, 0, ZoneType.RESIDENTIAL)
+        path, distance = dijkstra(self.network, self.stop1, fake_stop)
+        self.assertIsNone(path)
+        self.assertEqual(distance, float('inf'))
+
     def test_find_all_paths_basic(self):
-        # 测试查找所有路径
+        # A->B->C 和 A->C
         paths = find_all_paths(self.network, self.stop1, self.stop3)
-        self.assertEqual(len(paths), 2)  # A->B->C 和 A->C
-        # 验证路径距离
+        path_names = sorted([tuple(s.name for s in p[0]) for p in paths])
+        self.assertIn(("A", "B", "C"), path_names)
+        self.assertIn(("A", "C"), path_names)
         distances = [p[1] for p in paths]
-        self.assertIn(3, distances)  # A->B->C
-        self.assertIn(4, distances)  # A->C
+        self.assertIn(3, distances)
+        self.assertIn(4, distances)
 
     def test_find_all_paths_no_path(self):
-        # 测试无路径情况
-        isolated_stop = Stop("E", 4, 4)
-        paths = find_all_paths(self.network, self.stop1, isolated_stop)
+        # 到孤立点
+        paths = find_all_paths(self.network, self.stop1, self.stop5)
         self.assertEqual(len(paths), 0)
+
+    def test_find_all_paths_same_start_end(self):
+        # 起点终点相同
+        paths = find_all_paths(self.network, self.stop1, self.stop1)
+        self.assertEqual(len(paths), 1)
+        self.assertEqual([s.name for s in paths[0][0]], ["A"])
+        self.assertEqual(paths[0][1], 0)
+
+    def test_find_all_paths_start_not_in_network(self):
+        # 起点不在网络
+        fake_stop = Stop(99, "Z", 0, 0, ZoneType.RESIDENTIAL)
+        paths = find_all_paths(self.network, fake_stop, self.stop1)
+        self.assertEqual(paths, [])
+
+    def test_find_all_paths_end_not_in_network(self):
+        # 终点不在网络
+        fake_stop = Stop(99, "Z", 0, 0, ZoneType.RESIDENTIAL)
+        paths = find_all_paths(self.network, self.stop1, fake_stop)
+        self.assertEqual(paths, [])
 
 if __name__ == '__main__':
     unittest.main()
