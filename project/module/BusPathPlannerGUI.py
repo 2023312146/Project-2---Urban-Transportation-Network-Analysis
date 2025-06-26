@@ -4,7 +4,7 @@ import os
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(project_root)
 
-from PyQt5.QtWidgets import (QMainWindow, QGraphicsView, QGraphicsScene, QGraphicsEllipseItem, QGraphicsTextItem, QGraphicsLineItem, QGraphicsPolygonItem, QVBoxLayout, QWidget, QLabel, QHBoxLayout, QPushButton, QInputDialog, QMessageBox)
+from PyQt5.QtWidgets import (QMainWindow, QGraphicsView, QGraphicsScene, QGraphicsEllipseItem, QGraphicsTextItem, QGraphicsLineItem, QGraphicsPolygonItem, QVBoxLayout, QWidget, QLabel, QHBoxLayout, QPushButton, QInputDialog, QMessageBox, QScrollArea)
 from PyQt5.QtCore import Qt, QPointF
 from PyQt5.QtGui import QColor, QPen, QPainter, QFont, QPolygonF, QBrush
 
@@ -20,6 +20,7 @@ class BusNetworkVisualization(QMainWindow):
         self.hovered_station = None
         self.all_paths = []
         self.best_path = []
+        self.show_only_best_path = False  # 添加这个控制变量
         self.init_ui()
 
     def init_ui(self):
@@ -66,10 +67,20 @@ class BusNetworkVisualization(QMainWindow):
         path_box = QWidget()
         path_box.setStyleSheet("background-color: #f9f9f9; border-radius: 4px; padding: 10px;")
         path_layout = QVBoxLayout(path_box)
+        
         self.path_info = QLabel("")
         self.path_info.setWordWrap(True)
         self.path_info.setStyleSheet("font-size: 13px;")
-        path_layout.addWidget(self.path_info)
+        self.path_info.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setFrameShape(QScrollArea.NoFrame)
+        scroll_area.setWidget(self.path_info)
+        scroll_area.setMinimumHeight(180)
+        scroll_area.setMaximumHeight(350)
+        
+        path_layout.addWidget(scroll_area)
         control_layout.addWidget(path_box)
         button_box = QWidget()
         button_layout = QVBoxLayout(button_box)
@@ -116,94 +127,162 @@ class BusNetworkVisualization(QMainWindow):
     def draw_network(self):
         self.scene.clear()
         self.draw_grid()
-        for line_id, line_data in self.data_manager.lines.items():
-            color = QColor(*line_data["color"])
-            pen = QPen(color, 3)
-            pen.setStyle(Qt.SolidLine)
-            stations = line_data["stations"]
-            for i in range(len(stations)-1):
-                from_station = self.data_manager.stations[str(stations[i])]
-                to_station = self.data_manager.stations[str(stations[i+1])]
-                if (str(from_station["id"]), str(to_station["id"])) in self.data_manager.distances:
+        
+        # 如果有最佳路径且设置为只显示最佳路径
+        if self.best_path and self.show_only_best_path:
+            # 只绘制最佳路径的连线
+            for i in range(len(self.best_path)-1):
+                from_id = str(self.best_path[i])
+                to_id = str(self.best_path[i+1])
+                if (from_id, to_id) in self.data_manager.distances:
+                    from_station = self.data_manager.stations[from_id]
+                    to_station = self.data_manager.stations[to_id]
+                    # 绘制红色路径线
                     line = QGraphicsLineItem(from_station["x"], from_station["y"], to_station["x"], to_station["y"])
-                    line.setPen(pen)
+                    line.setPen(QPen(QColor(255, 0, 0), 5))
                     self.scene.addItem(line)
-        for (from_id, to_id), distance in self.data_manager.distances.items():
-            from_station = self.data_manager.stations[str(from_id)]
-            to_station = self.data_manager.stations[str(to_id)]
-            is_in_path = False
-            is_in_best_path = False
-            path_index = -1
-            
-            if self.all_paths:
-                for idx, path in enumerate(self.all_paths):
-                    for i in range(len(path)-1):
-                        if str(path[i]) == str(from_id) and str(path[i+1]) == str(to_id):
-                            is_in_path = True
-                            path_index = idx % len(self.path_colors)
-                            break
-                if self.best_path:
-                    for i in range(len(self.best_path)-1):
-                        if str(self.best_path[i]) == str(from_id) and str(self.best_path[i+1]) == str(to_id):
-                            is_in_best_path = True
-                            break
-            
-            if is_in_best_path:
-                line_color = QColor(255, 0, 0)  # 最佳路径保持红色
-                line_width = 5
-            elif is_in_path:
-                line_color = self.path_colors[path_index]  # 使用对应路径的颜色
-                line_width = 4
-            else:
-                line_color = QColor(0, 0, 255)  # 普通连接保持蓝色
-                line_width = 3
-            line = QGraphicsLineItem(from_station["x"], from_station["y"], to_station["x"], to_station["y"])
-            line.setPen(QPen(line_color, line_width))
-            self.scene.addItem(line)
-            self.draw_arrow(line.line(), line_color)
-            mid_x = (from_station["x"] + to_station["x"]) / 2
-            mid_y = (from_station["y"] + to_station["y"]) / 2
-            dist_text = QGraphicsTextItem(f"{distance:.1f}km")
-            dist_text.setPos(mid_x + 10, mid_y + 10)
-            dist_text.setDefaultTextColor(Qt.darkBlue)
-            font = QFont()
-            font.setPointSize(10)
-            dist_text.setFont(font)
-            self.scene.addItem(dist_text)
-        for station_id, station_data in self.data_manager.stations.items():
-            if station_data["type"] == "Commercial":
-                color = QColor(239, 83, 80)
-            elif station_data["type"] == "Residential":
-                color = QColor(102, 187, 106)
-            elif station_data["type"] == "Industrial":
-                color = QColor(66, 165, 245)
-            else:
-                color = QColor(255, 202, 40)
-            size = 20 if station_data["type"] != "Mixed" else 25
-            station = QGraphicsEllipseItem(station_data["x"]-size/2, station_data["y"]-size/2, size, size)
-            station.setData(0, str(station_id))
-            station.setBrush(color)
-            station.setPen(QPen(QColor(0, 0, 0, 150), 2))
-            station.setZValue(10)
-            if str(station_id) == str(self.selected_start):
-                highlight = QGraphicsEllipseItem(station_data["x"]-size/2-3, station_data["y"]-size/2-3, size+6, size+6)
-                highlight.setPen(QPen(QColor(76, 175, 80), 4))
-                highlight.setBrush(QBrush(Qt.NoBrush))
-                self.scene.addItem(highlight)
-            elif str(station_id) == str(self.selected_end):
-                highlight = QGraphicsEllipseItem(station_data["x"]-size/2-3, station_data["y"]-size/2-3, size+6, size+6)
-                highlight.setPen(QPen(QColor(244, 67, 54), 4))
-                highlight.setBrush(QBrush(Qt.NoBrush))
-                self.scene.addItem(highlight)
-            self.scene.addItem(station)
-            text = QGraphicsTextItem(station_data["name"])
-            text.setPos(station_data["x"] + size/2 + 10, station_data["y"] - 15)
-            text.setDefaultTextColor(QColor(33, 33, 33))
-            font = QFont()
-            font.setPointSize(10)
-            font.setBold(True)
-            text.setFont(font)
-            self.scene.addItem(text)
+                    # 绘制箭头
+                    self.draw_arrow(line.line(), QColor(255, 0, 0))
+                    # 显示距离
+                    distance = self.data_manager.distances[(from_id, to_id)]
+                    mid_x = (from_station["x"] + to_station["x"]) / 2
+                    mid_y = (from_station["y"] + to_station["y"]) / 2
+                    dist_text = QGraphicsTextItem(f"{distance:.1f}km")
+                    dist_text.setPos(mid_x + 10, mid_y + 10)
+                    dist_text.setDefaultTextColor(Qt.darkRed)
+                    font = QFont()
+                    font.setPointSize(10)
+                    dist_text.setFont(font)
+                    self.scene.addItem(dist_text)
+            # 只绘制最佳路径上的站点
+            for station_id in self.best_path:
+                station_id = str(station_id)
+                station_data = self.data_manager.stations[station_id]
+                size = 20 if station_data["type"] != "Mixed" else 25
+                station = QGraphicsEllipseItem(station_data["x"]-size/2, station_data["y"]-size/2, size, size)
+                station.setData(0, station_id)
+                # 设置站点颜色
+                if station_data["type"] == "Commercial":
+                    color = QColor(239, 83, 80)
+                elif station_data["type"] == "Residential":
+                    color = QColor(102, 187, 106)
+                elif station_data["type"] == "Industrial":
+                    color = QColor(66, 165, 245)
+                else:
+                    color = QColor(255, 202, 40)
+                station.setBrush(color)
+                station.setPen(QPen(QColor(0, 0, 0, 150), 2))
+                station.setZValue(10)
+                # 高亮起点和终点
+                if station_id == str(self.selected_start):
+                    highlight = QGraphicsEllipseItem(station_data["x"]-size/2-3, station_data["y"]-size/2-3, size+6, size+6)
+                    highlight.setPen(QPen(QColor(76, 175, 80), 4))
+                    highlight.setBrush(QBrush(Qt.NoBrush))
+                    self.scene.addItem(highlight)
+                elif station_id == str(self.selected_end):
+                    highlight = QGraphicsEllipseItem(station_data["x"]-size/2-3, station_data["y"]-size/2-3, size+6, size+6)
+                    highlight.setPen(QPen(QColor(244, 67, 54), 4))
+                    highlight.setBrush(QBrush(Qt.NoBrush))
+                    self.scene.addItem(highlight)
+                self.scene.addItem(station)
+                # 显示站点名称
+                text = QGraphicsTextItem(station_data["name"])
+                text.setPos(station_data["x"] + size/2 + 10, station_data["y"] - 15)
+                text.setDefaultTextColor(QColor(33, 33, 33))
+                font = QFont()
+                font.setPointSize(10)
+                font.setBold(True)
+                text.setFont(font)
+                self.scene.addItem(text)
+        else:
+            # 原始绘制逻辑保持不变
+            for line_id, line_data in self.data_manager.lines.items():
+                color = QColor(*line_data["color"])
+                pen = QPen(color, 3)
+                pen.setStyle(Qt.SolidLine)
+                stations = line_data["stations"]
+                for i in range(len(stations)-1):
+                    from_station = self.data_manager.stations[str(stations[i])]
+                    to_station = self.data_manager.stations[str(stations[i+1])]
+                    if (str(from_station["id"]), str(to_station["id"])) in self.data_manager.distances:
+                        line = QGraphicsLineItem(from_station["x"], from_station["y"], to_station["x"], to_station["y"])
+                        line.setPen(pen)
+                        self.scene.addItem(line)
+            for (from_id, to_id), distance in self.data_manager.distances.items():
+                from_station = self.data_manager.stations[str(from_id)]
+                to_station = self.data_manager.stations[str(to_id)]
+                is_in_path = False
+                is_in_best_path = False
+                path_index = -1
+                if self.all_paths:
+                    for idx, path in enumerate(self.all_paths):
+                        for i in range(len(path)-1):
+                            if str(path[i]) == str(from_id) and str(path[i+1]) == str(to_id):
+                                is_in_path = True
+                                path_index = idx % len(self.path_colors)
+                                break
+                    if self.best_path:
+                        for i in range(len(self.best_path)-1):
+                            if str(self.best_path[i]) == str(from_id) and str(self.best_path[i+1]) == str(to_id):
+                                is_in_best_path = True
+                                break
+                if is_in_best_path:
+                    line_color = QColor(255, 0, 0)  # 最佳路径保持红色
+                    line_width = 5
+                elif is_in_path:
+                    line_color = self.path_colors[path_index]  # 使用对应路径的颜色
+                    line_width = 4
+                else:
+                    line_color = QColor(0, 0, 255)  # 普通连接保持蓝色
+                    line_width = 3
+                line = QGraphicsLineItem(from_station["x"], from_station["y"], to_station["x"], to_station["y"])
+                line.setPen(QPen(line_color, line_width))
+                self.scene.addItem(line)
+                self.draw_arrow(line.line(), line_color)
+                mid_x = (from_station["x"] + to_station["x"]) / 2
+                mid_y = (from_station["y"] + to_station["y"]) / 2
+                dist_text = QGraphicsTextItem(f"{distance:.1f}km")
+                dist_text.setPos(mid_x + 10, mid_y + 10)
+                dist_text.setDefaultTextColor(Qt.darkBlue)
+                font = QFont()
+                font.setPointSize(10)
+                dist_text.setFont(font)
+                self.scene.addItem(dist_text)
+            for station_id, station_data in self.data_manager.stations.items():
+                size = 20 if station_data["type"] != "Mixed" else 25
+                station = QGraphicsEllipseItem(station_data["x"]-size/2, station_data["y"]-size/2, size, size)
+                station.setData(0, str(station_id))
+                # 设置站点颜色
+                if station_data["type"] == "Commercial":
+                    color = QColor(239, 83, 80)
+                elif station_data["type"] == "Residential":
+                    color = QColor(102, 187, 106)
+                elif station_data["type"] == "Industrial":
+                    color = QColor(66, 165, 245)
+                else:
+                    color = QColor(255, 202, 40)
+                station.setBrush(color)
+                station.setPen(QPen(QColor(0, 0, 0, 150), 2))
+                station.setZValue(10)
+                if str(station_id) == str(self.selected_start):
+                    highlight = QGraphicsEllipseItem(station_data["x"]-size/2-3, station_data["y"]-size/2-3, size+6, size+6)
+                    highlight.setPen(QPen(QColor(76, 175, 80), 4))
+                    highlight.setBrush(QBrush(Qt.NoBrush))
+                    self.scene.addItem(highlight)
+                elif str(station_id) == str(self.selected_end):
+                    highlight = QGraphicsEllipseItem(station_data["x"]-size/2-3, station_data["y"]-size/2-3, size+6, size+6)
+                    highlight.setPen(QPen(QColor(244, 67, 54), 4))
+                    highlight.setBrush(QBrush(Qt.NoBrush))
+                    self.scene.addItem(highlight)
+                self.scene.addItem(station)
+                text = QGraphicsTextItem(station_data["name"])
+                text.setPos(station_data["x"] + size/2 + 10, station_data["y"] - 15)
+                text.setDefaultTextColor(QColor(33, 33, 33))
+                font = QFont()
+                font.setPointSize(10)
+                font.setBold(True)
+                text.setFont(font)
+                self.scene.addItem(text)
 
     def draw_grid(self):
         pen = QPen(QColor(240, 240, 240), 1)
@@ -293,14 +372,17 @@ class BusNetworkVisualization(QMainWindow):
         self.all_paths = self.path_analyzer.find_all_paths(str(self.selected_start), str(self.selected_end))
         self.best_path = self.path_analyzer.find_best_path(str(self.selected_start), str(self.selected_end))
         
+        # 设置只显示最佳路径
+        self.show_only_best_path = True
+        
         start_name = self.data_manager.stations.get(str(self.selected_start), {}).get("name", str(self.selected_start))
         end_name = self.data_manager.stations.get(str(self.selected_end), {}).get("name", str(self.selected_end))
         
-        info_text = f"FROM {start_name} TO {end_name}\n\n"
+        info_text = f"FROM {start_name} TO {end_name}<br>-----------<br>"
         if not self.all_paths:
             info_text += "No path found."
         else:
-            info_text += "所有可达路径:\n"
+            info_text += "All reachable paths:"
         
         for idx, path in enumerate(self.all_paths):
             path = [str(station) for station in path]
@@ -314,13 +396,11 @@ class BusNetworkVisualization(QMainWindow):
                 dist = self.data_manager.distances.get((str(path[j]), str(path[j+1])), 0)
                 total_dist += dist
             
-            color_idx = idx % len(self.path_colors)
-            color = self.path_colors[color_idx]
-            color_name = self.get_color_name(color)
             path_str = " → ".join(path_names)
-            info_text += f"<span style='color:rgb({color.red()},{color.green()},{color.blue()})'>■</span> {path_str} (距离: {total_dist:.2f}km)\n"
-            
+            info_text += f"{path_str} (distance: {total_dist:.2f}km)<br>-----------<br>"
+        
         if self.best_path:
+            info_text += "<br>"
             best_path = [str(station) for station in self.best_path]
             best_path_names = []
             for station_id in best_path:
@@ -333,34 +413,17 @@ class BusNetworkVisualization(QMainWindow):
                 best_dist += dist
             
             best_path_str = " → ".join(best_path_names)
-            info_text += f"\n<span style='color:red'>■</span> 推荐路径 (最短距离):\n{best_path_str} (距离: {best_dist:.2f}km)"
-            
+            info_text += f"<b>Recommended Path (Minimum Distance):</b><br>{best_path_str} (distance: {best_dist:.2f}km)"
+        
         self.path_info.setText(info_text)
         self.path_info.setTextFormat(Qt.RichText)
-
-    def get_color_name(self, color):
-        if color == QColor(255, 255, 0):
-            return "黄色"
-        elif color == QColor(0, 255, 0):
-            return "绿色"
-        elif color == QColor(0, 255, 255):
-            return "青色"
-        elif color == QColor(255, 0, 255):
-            return "紫色"
-        elif color == QColor(255, 165, 0):
-            return "橙色"
-        elif color == QColor(0, 0, 255):
-            return "蓝色"
-        elif color == QColor(255, 192, 203):
-            return "粉色"
-        else:
-            return "自定义颜色"
 
     def clear_selection(self):
         self.selected_start = None
         self.selected_end = None
         self.all_paths = []
         self.best_path = []
+        self.show_only_best_path = False  # 重置显示模式
         self.info_label.setText("Hover over stations to view information, click to select start and end points")
         self.path_info.setText("")
         self.draw_network()

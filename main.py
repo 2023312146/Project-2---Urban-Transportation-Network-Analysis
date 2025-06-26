@@ -15,15 +15,5 @@ if __name__ == "__main__":
     data_manager = NetworkDataManager()
     path_analyzer = PathAnalyzer(data_manager)
     window = BusNetworkVisualization(data_manager, path_analyzer)
-    # 添加路径颜色初始化
-    window.path_colors = [
-        QColor(255, 255, 0),   # 黄色
-        QColor(0, 255, 0),     # 绿色
-        QColor(0, 255, 255),   # 青色
-        QColor(255, 0, 255),   # 紫色
-        QColor(255, 165, 0),   # 橙色
-        QColor(0, 0, 255),     # 蓝色
-        QColor(255, 192, 203)  # 粉色
-    ]
     window.show()
     sys.exit(app.exec_())
