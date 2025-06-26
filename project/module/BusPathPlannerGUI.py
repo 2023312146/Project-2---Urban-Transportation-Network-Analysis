@@ -29,11 +29,25 @@ class BusNetworkVisualization(QMainWindow):
         main_layout.setSpacing(15)
         self.setStyleSheet("""
             QMainWindow { background-color: #f5f5f5; font-family: Arial, sans-serif; }
-            QLabel { font-size: 12px; color: #333; }
-            QPushButton { background-color: #4CAF50; color: white; border: none; padding: 50px; border-radius: 4px; min-width: 100px; font-size: 20px; font-family: inherit;  }
+            QLabel { font-size: 14px; color: #333; }
+            QPushButton { 
+                background-color: #4CAF50; 
+                color: white; 
+                border: none; 
+                padding: 8px; 
+                border-radius: 4px; 
+                min-width: 120px; 
+                font-size: 14px; 
+                font-family: inherit;  
+            }
             QPushButton:hover { background-color: #45a049; }
             QPushButton:pressed { background-color: #3d8b40; }
             QGraphicsView { border: 1px solid #ddd; background-color: white; border-radius: 4px; }
+            QInputDialog QLabel { font-size: 14px; }
+            QInputDialog QLineEdit { font-size: 14px; height: 25px; }
+            QInputDialog QComboBox { font-size: 14px; height: 25px; }
+            QInputDialog QSpinBox { font-size: 14px; height: 25px; }
+            QInputDialog QDoubleSpinBox { font-size: 14px; height: 25px; }
         """)
         control_panel = QWidget()
         control_panel.setStyleSheet("background-color: white; border-radius: 4px; padding: 10px;")
@@ -310,65 +324,243 @@ class BusNetworkVisualization(QMainWindow):
 
     def remove_station_dialog(self):
         if not self.data_manager.stations:
-            QMessageBox.warning(self, "警告", "没有站点可以移除！")
+            msg = QMessageBox()
+            msg.setStyleSheet(self.get_messagebox_style())
+            msg.warning(self, "Warning", "No stops can be removed!")
             return
-        station_name, ok = QInputDialog.getItem(self, "Remove station", "选择站点:", list(self.data_manager.stations.keys()))
+        station_name, ok = QInputDialog.getItem(self, "Remove station", "Select a stop:", list(self.data_manager.stations.keys()))
         if ok and station_name:
             self.data_manager.remove_station(station_name)
             self.draw_network()
 
     def update_station_type_dialog(self):
         if not self.data_manager.stations:
-            QMessageBox.warning(self, "警告", "没有站点可以更新！")
+            QMessageBox.warning(self, "Warning", "No stops can be updated!")
             return
-        station_name, ok = QInputDialog.getItem(self, "Update station type", "选择站点:", list(self.data_manager.stations.keys()))
+        station_name, ok = QInputDialog.getItem(self, "Update station type", "Select a stop:", list(self.data_manager.stations.keys()))
         if ok and station_name:
-            station_type, ok = QInputDialog.getItem(self, "Update station type", "站点类型:", ["Residential", "Commercial", "Mixed", "Industrial"])
+            station_type, ok = QInputDialog.getItem(self, "Update station type", "Stop type:", ["Residential", "Commercial", "Mixed", "Industrial"])
             if ok:
                 self.data_manager.update_station_type(station_name, station_type)
                 self.draw_network()
 
     def add_connection_dialog(self):
         if len(self.data_manager.stations) < 2:
-            QMessageBox.warning(self, "警告", "至少需要两个站点才能添加连接！")
+            QMessageBox.warning(self, "warning", "You'll need at least two stops to add a connection!")
             return
-        from_name, ok = QInputDialog.getItem(self, "Add connection", "起始站点:", list(self.data_manager.stations.keys()))
+        from_name, ok = QInputDialog.getItem(self, "Add connection", "Start stop:", list(self.data_manager.stations.keys()))
         if not ok:
             return
-        to_name, ok = QInputDialog.getItem(self, "Add connection", "目标站点:", [n for n in self.data_manager.stations.keys() if n != from_name])
+        to_name, ok = QInputDialog.getItem(self, "Add connection", "Target stop:", [n for n in self.data_manager.stations.keys() if n != from_name])
         if not ok:
             return
         if (from_name, to_name) in self.data_manager.distances:
-            QMessageBox.warning(self, "警告", "该连接已存在！")
+            QMessageBox.warning(self, "Warning", "The connection already exists!")
             return
-        distance, ok = QInputDialog.getDouble(self, "Add connection", "距离（千米）:", 10.0, 0.1, 100.0)
+        distance, ok = QInputDialog.getDouble(self, "Add connection", "distance(km):", 10.0, 0.1, 100.0)
         if ok:
             self.data_manager.add_connection(from_name, to_name, distance)
             self.draw_network()
 
     def remove_connection_dialog(self):
         if len(self.data_manager.distances) == 0:
-            QMessageBox.warning(self, "警告", "没有连接可以移除！")
+            QMessageBox.warning(self, "Warning", "No connection can be removed!")
             return
-        from_name, ok = QInputDialog.getItem(self, "Remove connection", "起始站点:", list(self.data_manager.stations.keys()))
+        from_name, ok = QInputDialog.getItem(self, "Remove connection", "Start stop:", list(self.data_manager.stations.keys()))
         if not ok:
             return
         connections = [to for (f, to) in self.data_manager.distances.keys() if f == from_name]
         if not connections:
-            QMessageBox.warning(self, "警告", "该站点没有出站连接！")
+            QMessageBox.warning(self, "Warning", "There is no exit connection at this stop!")
             return
-        to_name, ok = QInputDialog.getItem(self, "Remove connection", "目标站点:", connections)
+        to_name, ok = QInputDialog.getItem(self, "Remove connection", "target stop:", connections)
         if ok:
             self.data_manager.remove_connection(from_name, to_name)
             self.draw_network()
 
     def find_highest_degree_station_dialog(self):
         highest_degree_station = self.path_analyzer.find_highest_degree_station()
+        msg = QMessageBox()
+        msg.setStyleSheet("""
+            QMessageBox {
+                font-size: 14px;
+            }
+            QLabel {
+                font-size: 16px;
+                min-width: 300px;
+            }
+            QPushButton {
+                min-width: 80px;
+                font-size: 14px;
+                padding: 5px;
+            }
+        """)
         if highest_degree_station:
             station = self.data_manager.stations[highest_degree_station]
-            QMessageBox.information(self, "中心度最高的站点", f"中心度最高的站点是：{station['name']}\n连接数：{len(station['connections'])}")
+            msg.setWindowTitle("Highest Degree Station")
+            msg.setText(f"<b>{station['name']}</b><br>Connections: {len(station['connections'])}")
         else:
-            QMessageBox.information(self, "中心度最高的站点", "没有站点。")
+            msg.setWindowTitle("Highest Degree Station")
+            msg.setText("No stations available")
+        msg.setStandardButtons(QMessageBox.Ok)
+        msg.exec_()
+
+    def remove_station_dialog(self):
+        if not self.data_manager.stations:
+            msg = QMessageBox()
+            msg.setStyleSheet(self.get_messagebox_style())
+            msg.warning(self, "Warning", "No stops can be removed!")
+            return
+        station_name, ok = QInputDialog.getItem(self, "Remove station", "Select a stop:", list(self.data_manager.stations.keys()))
+        if ok and station_name:
+            self.data_manager.remove_station(station_name)
+            self.draw_network()
+
+    def update_station_type_dialog(self):
+        if not self.data_manager.stations:
+            QMessageBox.warning(self, "Warning", "No stops can be updated!")
+            return
+        station_name, ok = QInputDialog.getItem(self, "Update station type", "Select a stop:", list(self.data_manager.stations.keys()))
+        if ok and station_name:
+            station_type, ok = QInputDialog.getItem(self, "Update station type", "Stop type:", ["Residential", "Commercial", "Mixed", "Industrial"])
+            if ok:
+                self.data_manager.update_station_type(station_name, station_type)
+                self.draw_network()
+
+    def add_connection_dialog(self):
+        if len(self.data_manager.stations) < 2:
+            QMessageBox.warning(self, "warning", "You'll need at least two stops to add a connection!")
+            return
+        from_name, ok = QInputDialog.getItem(self, "Add connection", "Start stop:", list(self.data_manager.stations.keys()))
+        if not ok:
+            return
+        to_name, ok = QInputDialog.getItem(self, "Add connection", "Target stop:", [n for n in self.data_manager.stations.keys() if n != from_name])
+        if not ok:
+            return
+        if (from_name, to_name) in self.data_manager.distances:
+            QMessageBox.warning(self, "Warning", "The connection already exists!")
+            return
+        distance, ok = QInputDialog.getDouble(self, "Add connection", "distance(km):", 10.0, 0.1, 100.0)
+        if ok:
+            self.data_manager.add_connection(from_name, to_name, distance)
+            self.draw_network()
+
+    def remove_connection_dialog(self):
+        if len(self.data_manager.distances) == 0:
+            QMessageBox.warning(self, "Warning", "No connection can be removed!")
+            return
+        from_name, ok = QInputDialog.getItem(self, "Remove connection", "Start stop:", list(self.data_manager.stations.keys()))
+        if not ok:
+            return
+        connections = [to for (f, to) in self.data_manager.distances.keys() if f == from_name]
+        if not connections:
+            QMessageBox.warning(self, "Warning", "There is no exit connection at this stop!")
+            return
+        to_name, ok = QInputDialog.getItem(self, "Remove connection", "target stop:", connections)
+        if ok:
+            self.data_manager.remove_connection(from_name, to_name)
+            self.draw_network()
+
+    def get_messagebox_style(self):
+        return """
+            QMessageBox {
+                font-size: 14px;
+            }
+            QLabel {
+                font-size: 16px;
+                min-width: 300px;
+            }
+            QPushButton {
+                min-width: 80px;
+                font-size: 14px;
+                padding: 5px;
+            }
+        """
+
+    def init_ui(self):
+        central_widget = QWidget()
+        self.setCentralWidget(central_widget)
+        main_layout = QHBoxLayout(central_widget)
+        main_layout.setSpacing(15)
+        self.setStyleSheet("""
+            QMainWindow { background-color: #f5f5f5; font-family: Arial, sans-serif; }
+            QLabel { font-size: 14px; color: #333; }
+            QPushButton { 
+                background-color: #4CAF50; 
+                color: white; 
+                border: none; 
+                padding: 8px; 
+                border-radius: 4px; 
+                min-width: 120px; 
+                font-size: 14px; 
+                font-family: inherit;  
+            }
+            QPushButton:hover { background-color: #45a049; }
+            QPushButton:pressed { background-color: #3d8b40; }
+            QGraphicsView { border: 1px solid #ddd; background-color: white; border-radius: 4px; }
+            QInputDialog QLabel { font-size: 14px; }
+            QInputDialog QLineEdit { font-size: 14px; height: 25px; }
+            QInputDialog QComboBox { font-size: 14px; height: 25px; }
+            QInputDialog QSpinBox { font-size: 14px; height: 25px; }
+            QInputDialog QDoubleSpinBox { font-size: 14px; height: 25px; }
+        """)
+        control_panel = QWidget()
+        control_panel.setStyleSheet("background-color: white; border-radius: 4px; padding: 10px;")
+        control_layout = QVBoxLayout(control_panel)
+        control_layout.setAlignment(Qt.AlignTop)
+        control_layout.setSpacing(30)
+        control_layout.setContentsMargins(20, 20, 20, 20)
+        info_box = QWidget()
+        info_box.setStyleSheet("background-color: #f9f9f9; border-radius: 4px; padding: 10px;")
+        info_layout = QVBoxLayout(info_box)
+        self.info_label = QLabel("Hover over stations to view information, click to select start and end points")
+        self.info_label.setWordWrap(True)
+        self.info_label.setStyleSheet("font-size: 13px;")
+        info_layout.addWidget(self.info_label)
+        control_layout.addWidget(info_box)
+        path_box = QWidget()
+        path_box.setStyleSheet("background-color: #f9f9f9; border-radius: 4px; padding: 10px;")
+        path_layout = QVBoxLayout(path_box)
+        self.path_info = QLabel("")
+        self.path_info.setWordWrap(True)
+        self.path_info.setStyleSheet("font-size: 13px;")
+        path_layout.addWidget(self.path_info)
+        control_layout.addWidget(path_box)
+        button_box = QWidget()
+        button_layout = QVBoxLayout(button_box)
+        button_layout.setSpacing(10)
+        station_btn_group = QWidget()
+        station_btn_layout = QVBoxLayout(station_btn_group)
+        station_btn_layout.setSpacing(8)
+        buttons = [
+            ("Clear Selection", self.clear_selection, "#f44336"),
+            ("Add Station", self.add_station_dialog, "#2196F3"),
+            ("Remove Station", self.remove_station_dialog, "#ff9800"),
+            ("Update Station Type", self.update_station_type_dialog, "#9c27b0"),
+            ("Add Connection", self.add_connection_dialog, "#4CAF50"),
+            ("Remove Connection", self.remove_connection_dialog, "#607d8b"),
+            ("Find Highest Degree Station", self.find_highest_degree_station_dialog, "#009688")
+        ]
+        for text, callback, color in buttons:
+            btn = QPushButton(text)
+            btn.clicked.connect(callback)
+            btn.setStyleSheet(f"""
+                QPushButton {{ background-color: {color}; color: white; text-align: left; padding-left: 15px; }}
+                QPushButton:hover {{ background-color: {self.darken_color(color)}; }}
+            """)
+            station_btn_layout.addWidget(btn)
+        button_layout.addWidget(station_btn_group)
+        control_layout.addWidget(button_box)
+        main_layout.addWidget(control_panel, stretch=1)
+        self.scene = QGraphicsScene()
+        self.view = CustomGraphicsView(self)
+        self.view.setScene(self.scene)
+        self.view.setRenderHint(QPainter.Antialiasing)
+        self.view.setRenderHint(QPainter.SmoothPixmapTransform)
+        self.view.setDragMode(QGraphicsView.ScrollHandDrag)
+        self.view.setMouseTracking(True)
+        main_layout.addWidget(self.view, stretch=4)
+        self.draw_network()
 
 import math
 class CustomGraphicsView(QGraphicsView):
@@ -384,5 +576,3 @@ class CustomGraphicsView(QGraphicsView):
         if event.button() == Qt.LeftButton:
             pos = self.mapToScene(event.pos())
             self.parent.handle_station_click(pos)
-
-    # ... 其他方法 ...
