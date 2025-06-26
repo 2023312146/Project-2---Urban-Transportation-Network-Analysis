@@ -247,24 +247,23 @@ class BusNetworkVisualization(QMainWindow):
         else:
             if self.hovered_station:
                 self.hovered_station = None
-                self.info_label.setText("鼠标悬停查看站点信息，点击选择起点和终点")
 
     def handle_station_click(self, pos):
         items = self.scene.items(pos)
         for item in items:
             if isinstance(item, QGraphicsEllipseItem):
-                station_id = item.data(0)
-                if station_id:
+                station_name = item.data(0)  # 改为存储站点名
+                if station_name:
                     if self.selected_start is None:
-                        self.selected_start = station_id
-                        self.info_label.setText(f"Start point selected: {self.data_manager.stations[station_id]['name']}\nPlease click to select end point")
-                    elif self.selected_end is None and station_id != self.selected_start:
-                        self.selected_end = station_id
+                        self.selected_start = station_name
+                        self.info_label.setText(f"Start point selected: {station_name}\nPlease click to select end point")
+                    elif self.selected_end is None and station_name != self.selected_start:
+                        self.selected_end = station_name
                         self.update_path_info()
                     else:
-                        self.selected_start = station_id
+                        self.selected_start = station_name
                         self.selected_end = None
-                        self.info_label.setText(f"Start point selected: {self.data_manager.stations[station_id]['name']}\nPlease click to select end point")
+                        self.info_label.setText(f"Start point selected: {station_name}\nPlease click to select end point")
                         self.path_info.setText("")
                     self.draw_network()
                     break
@@ -274,16 +273,16 @@ class BusNetworkVisualization(QMainWindow):
             return
         self.all_paths = self.path_analyzer.find_all_paths(self.selected_start, self.selected_end)
         self.best_path = self.path_analyzer.find_best_path(self.selected_start, self.selected_end)
-        info_text = f"从 {self.data_manager.stations[self.selected_start]['name']} 到 {self.data_manager.stations[self.selected_end]['name']}\n\n"
-        info_text += "所有可能的路径:\n"
+        info_text = f"FROM {self.selected_start} TO {self.selected_end}\n\n"
+        info_text += "All reachable paths:\n"
         for i, path in enumerate(self.all_paths, 1):
             total_dist = sum(self.data_manager.distances.get((path[j], path[j+1]), 0) for j in range(len(path)-1))
-            path_str = " → ".join(self.data_manager.stations[station_id]['name'] for station_id in path)
-            info_text += f"{i}. {path_str} (总距离: {total_dist:.2f}km)\n"
+            path_str = " → ".join(path)
+            info_text += f"{i}. {path_str} (Distance: {total_dist:.2f}km)\n"
         if self.best_path:
             best_dist = sum(self.data_manager.distances.get((self.best_path[j], self.best_path[j+1]), 0) for j in range(len(self.best_path)-1))
-            best_path_str = " → ".join(self.data_manager.stations[station_id]['name'] for station_id in self.best_path)
-            info_text += f"\n推荐最短路径:\n{best_path_str} (总距离: {best_dist:.2f}km)"
+            best_path_str = " → ".join(self.best_path)
+            info_text += f"\nRecommended Path (Shortest):\n{best_path_str} (Distance: {best_dist:.2f}km)"
         self.path_info.setText(info_text)
 
     def clear_selection(self):
@@ -313,41 +312,55 @@ class BusNetworkVisualization(QMainWindow):
         if not self.data_manager.stations:
             QMessageBox.warning(self, "警告", "没有站点可以移除！")
             return
-        station_id, ok = QInputDialog.getInt(self, "Remove station", "输入站点ID:", min(self.data_manager.stations.keys()), min(self.data_manager.stations.keys()), max(self.data_manager.stations.keys()))
-        if ok:
-            self.data_manager.remove_station(station_id)
+        station_name, ok = QInputDialog.getItem(self, "Remove station", "选择站点:", list(self.data_manager.stations.keys()))
+        if ok and station_name:
+            self.data_manager.remove_station(station_name)
             self.draw_network()
 
     def update_station_type_dialog(self):
-        station_id, ok = QInputDialog.getInt(self, "Update station type", "输入站点ID:", min(self.data_manager.stations.keys()), min(self.data_manager.stations.keys()), max(self.data_manager.stations.keys()))
-        if ok:
+        if not self.data_manager.stations:
+            QMessageBox.warning(self, "警告", "没有站点可以更新！")
+            return
+        station_name, ok = QInputDialog.getItem(self, "Update station type", "选择站点:", list(self.data_manager.stations.keys()))
+        if ok and station_name:
             station_type, ok = QInputDialog.getItem(self, "Update station type", "站点类型:", ["Residential", "Commercial", "Mixed", "Industrial"])
             if ok:
-                self.data_manager.update_station_type(station_id, station_type)
+                self.data_manager.update_station_type(station_name, station_type)
                 self.draw_network()
 
     def add_connection_dialog(self):
-        from_id, ok = QInputDialog.getInt(self, "Add connection", "起始站点ID:", min(self.data_manager.stations.keys()), min(self.data_manager.stations.keys()), max(self.data_manager.stations.keys()))
+        if len(self.data_manager.stations) < 2:
+            QMessageBox.warning(self, "警告", "至少需要两个站点才能添加连接！")
+            return
+        from_name, ok = QInputDialog.getItem(self, "Add connection", "起始站点:", list(self.data_manager.stations.keys()))
         if not ok:
             return
-        to_id, ok = QInputDialog.getInt(self, "Add connection", "目标站点ID:", min(self.data_manager.stations.keys()), min(self.data_manager.stations.keys()), max(self.data_manager.stations.keys()))
+        to_name, ok = QInputDialog.getItem(self, "Add connection", "目标站点:", [n for n in self.data_manager.stations.keys() if n != from_name])
         if not ok:
             return
-        if (from_id, to_id) in self.data_manager.distances:
+        if (from_name, to_name) in self.data_manager.distances:
             QMessageBox.warning(self, "警告", "该连接已存在！")
             return
         distance, ok = QInputDialog.getDouble(self, "Add connection", "距离（千米）:", 10.0, 0.1, 100.0)
         if ok:
-            self.data_manager.add_connection(from_id, to_id, distance)
+            self.data_manager.add_connection(from_name, to_name, distance)
             self.draw_network()
 
     def remove_connection_dialog(self):
-        from_id, ok = QInputDialog.getInt(self, "Remove connection", "起始站点ID:", min(self.data_manager.stations.keys()), min(self.data_manager.stations.keys()), max(self.data_manager.stations.keys()))
+        if len(self.data_manager.distances) == 0:
+            QMessageBox.warning(self, "警告", "没有连接可以移除！")
+            return
+        from_name, ok = QInputDialog.getItem(self, "Remove connection", "起始站点:", list(self.data_manager.stations.keys()))
+        if not ok:
+            return
+        connections = [to for (f, to) in self.data_manager.distances.keys() if f == from_name]
+        if not connections:
+            QMessageBox.warning(self, "警告", "该站点没有出站连接！")
+            return
+        to_name, ok = QInputDialog.getItem(self, "Remove connection", "目标站点:", connections)
         if ok:
-            to_id, ok = QInputDialog.getInt(self, "Remove connection", "目标站点ID:", min(self.data_manager.stations.keys()), min(self.data_manager.stations.keys()), max(self.data_manager.stations.keys()))
-            if ok:
-                self.data_manager.remove_connection(from_id, to_id)
-                self.draw_network()
+            self.data_manager.remove_connection(from_name, to_name)
+            self.draw_network()
 
     def find_highest_degree_station_dialog(self):
         highest_degree_station = self.path_analyzer.find_highest_degree_station()
@@ -372,4 +385,4 @@ class CustomGraphicsView(QGraphicsView):
             pos = self.mapToScene(event.pos())
             self.parent.handle_station_click(pos)
 
-    # ... 其他方法 ... 
+    # ... 其他方法 ...
