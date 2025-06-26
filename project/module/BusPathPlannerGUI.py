@@ -287,6 +287,12 @@ class BusNetworkVisualization(QMainWindow):
             return
         self.all_paths = self.path_analyzer.find_all_paths(self.selected_start, self.selected_end)
         self.best_path = self.path_analyzer.find_best_path(self.selected_start, self.selected_end)
+        
+        # 确保路径中的站点ID都是字符串类型
+        self.all_paths = [[str(station) for station in path] for path in self.all_paths]
+        if self.best_path:
+            self.best_path = [str(station) for station in self.best_path]
+            
         info_text = f"FROM {self.selected_start} TO {self.selected_end}\n\n"
         info_text += "All reachable paths:\n"
         for i, path in enumerate(self.all_paths, 1):
