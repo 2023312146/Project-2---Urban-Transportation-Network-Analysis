@@ -4,7 +4,7 @@ import os
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(project_root)
 
-from PyQt5.QtWidgets import (QMainWindow, QGraphicsView, QGraphicsScene, QGraphicsEllipseItem, QGraphicsTextItem, QGraphicsLineItem, QGraphicsPolygonItem, QVBoxLayout, QWidget, QLabel, QHBoxLayout, QPushButton, QInputDialog, QMessageBox, QScrollArea)
+from PyQt5.QtWidgets import (QMainWindow, QGraphicsView, QGraphicsScene, QGraphicsEllipseItem, QGraphicsTextItem, QGraphicsLineItem, QGraphicsPolygonItem, QVBoxLayout, QWidget, QLabel, QHBoxLayout, QPushButton, QInputDialog, QMessageBox, QScrollArea, QGraphicsRectItem)
 from PyQt5.QtCore import Qt, QPointF
 from PyQt5.QtGui import QColor, QPen, QPainter, QFont, QPolygonF, QBrush
 
@@ -283,6 +283,51 @@ class BusNetworkVisualization(QMainWindow):
                 font.setBold(True)
                 text.setFont(font)
                 self.scene.addItem(text)
+
+        # --- 在右上角添加图例 ---
+        legend_items = [
+            (QColor(255, 255, 255), "Color annotations:"),  # 标题项
+            (None, ""),  # 空行
+            (QColor(0, 0, 255), "Normal Path"),
+            (QColor(255, 0, 0), "Best Path"), 
+            (QColor(239, 83, 80), "Commercial"),
+            (QColor(102, 187, 106), "Residential"),
+            (QColor(66, 165, 245), "Industrial"),
+            (QColor(255, 202, 40), "Mixed")
+        ]
+        legend_x = self.width() - 220
+        legend_y = 30
+        legend_w = 180
+        legend_h = 120
+        # 图例背景 (移除边框)
+        legend_bg = QGraphicsRectItem(legend_x, legend_y, legend_w, legend_h)
+        legend_bg.setBrush(QColor(255, 255, 255, 230))
+        legend_bg.setPen(QPen(Qt.NoPen))  # 修改这里，使用无边框
+        legend_bg.setZValue(100)
+        self.scene.addItem(legend_bg)
+        # 图例内容
+        for i, (color, text) in enumerate(legend_items):
+            if color is not None:  # Only create rect if color is not None
+                rect = QGraphicsRectItem(legend_x + 15, legend_y + 15 + i*25, 20, 20)
+                rect.setBrush(color)
+                rect.setPen(QPen(Qt.NoPen))
+                rect.setZValue(101)
+                self.scene.addItem(rect)
+            
+            label = QGraphicsTextItem(text)
+            if i == 0:  # 标题项特殊处理
+                label.setPos(legend_x + legend_w/2 - label.boundingRect().width()/2, legend_y + 15)
+                font = QFont()
+                font.setPointSize(13)
+                font.setBold(True)
+            else:
+                label.setPos(legend_x + 45, legend_y + 13 + i*25)
+                font = QFont()
+                font.setPointSize(11)
+            label.setDefaultTextColor(QColor(33, 33, 33))
+            label.setFont(font)
+            label.setZValue(101)
+            self.scene.addItem(label)
 
     def draw_grid(self):
         pen = QPen(QColor(240, 240, 240), 1)
