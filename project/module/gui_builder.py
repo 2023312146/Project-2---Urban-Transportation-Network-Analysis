@@ -119,16 +119,18 @@ class GUIBuilder(QMainWindow):
         self.legend_label = QLabel(self)
         self.legend_label.setStyleSheet("background: rgba(255,255,255,0.93); border-radius:8px; padding:10px; border:1px solid #ddd;")
         self.legend_label.setText(
-            "<span style='font-size:30px; font-weight:bold;'>Color annotations</span><br>"
+            "<span style='font-size:30px; font-weight:bold;'>Color annotations</span><br>----------------<br>"
+            "<span style='font-size:20px;'>Path Type</span><br>"
             "<span style='font-size:20px; color:#0000ff;'>■</span> <span style='font-size:20px;'>Normal Path</span><br>"
-            "<span style='font-size:20px; color:#ff0000;'>■</span> <span style='font-size:20px;'>Best Path</span><br>"
+            "<span style='font-size:20px; color:#ff0000;'>■</span> <span style='font-size:20px;'>Best Path</span><br>----------------<br>"
+            "<span style='font-size:20px;'>Zone Type</span><br>"
             "<span style='font-size:20px; color:#ef5350;'>■</span> <span style='font-size:20px;'>Commercial</span><br>"
             "<span style='font-size:20px; color:#66bb6a;'>■</span> <span style='font-size:20px;'>Residential</span><br>"
             "<span style='font-size:20px; color:#42a5f5;'>■</span> <span style='font-size:20px;'>Industrial</span><br>"
             "<span style='font-size:20px; color:#ffca28;'>■</span> <span style='font-size:20px;'>Mixed</span>"
         )
         self.legend_label.setFixedWidth(320)
-        self.legend_label.setFixedHeight(220)
+        self.legend_label.setFixedHeight(270)
         self.legend_label.setAlignment(Qt.AlignLeft | Qt.AlignTop)
         self.legend_label.setAttribute(Qt.WA_TransparentForMouseEvents)
         self.legend_label.raise_()
