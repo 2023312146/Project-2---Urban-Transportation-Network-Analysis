@@ -122,36 +122,40 @@ class BusNetworkVisualization(QMainWindow):
             pen.setStyle(Qt.SolidLine)
             stations = line_data["stations"]
             for i in range(len(stations)-1):
-                from_station = self.data_manager.stations[stations[i]]
-                to_station = self.data_manager.stations[stations[i+1]]
-                if (from_station["id"], to_station["id"]) in self.data_manager.distances:
+                from_station = self.data_manager.stations[str(stations[i])]
+                to_station = self.data_manager.stations[str(stations[i+1])]
+                if (str(from_station["id"]), str(to_station["id"])) in self.data_manager.distances:
                     line = QGraphicsLineItem(from_station["x"], from_station["y"], to_station["x"], to_station["y"])
                     line.setPen(pen)
                     self.scene.addItem(line)
         for (from_id, to_id), distance in self.data_manager.distances.items():
-            from_station = self.data_manager.stations[from_id]
-            to_station = self.data_manager.stations[to_id]
+            from_station = self.data_manager.stations[str(from_id)]
+            to_station = self.data_manager.stations[str(to_id)]
             is_in_path = False
             is_in_best_path = False
+            path_index = -1
+            
             if self.all_paths:
-                for path in self.all_paths:
+                for idx, path in enumerate(self.all_paths):
                     for i in range(len(path)-1):
-                        if path[i] == from_id and path[i+1] == to_id:
+                        if str(path[i]) == str(from_id) and str(path[i+1]) == str(to_id):
                             is_in_path = True
+                            path_index = idx % len(self.path_colors)
                             break
                 if self.best_path:
                     for i in range(len(self.best_path)-1):
-                        if self.best_path[i] == from_id and self.best_path[i+1] == to_id:
+                        if str(self.best_path[i]) == str(from_id) and str(self.best_path[i+1]) == str(to_id):
                             is_in_best_path = True
                             break
+            
             if is_in_best_path:
-                line_color = QColor(255, 0, 0)
+                line_color = QColor(255, 0, 0)  # 最佳路径保持红色
                 line_width = 5
             elif is_in_path:
-                line_color = QColor(255, 255, 0)
+                line_color = self.path_colors[path_index]  # 使用对应路径的颜色
                 line_width = 4
             else:
-                line_color = QColor(0, 0, 255)
+                line_color = QColor(0, 0, 255)  # 普通连接保持蓝色
                 line_width = 3
             line = QGraphicsLineItem(from_station["x"], from_station["y"], to_station["x"], to_station["y"])
             line.setPen(QPen(line_color, line_width))
@@ -177,16 +181,16 @@ class BusNetworkVisualization(QMainWindow):
                 color = QColor(255, 202, 40)
             size = 20 if station_data["type"] != "Mixed" else 25
             station = QGraphicsEllipseItem(station_data["x"]-size/2, station_data["y"]-size/2, size, size)
-            station.setData(0, station_id)
+            station.setData(0, str(station_id))
             station.setBrush(color)
             station.setPen(QPen(QColor(0, 0, 0, 150), 2))
             station.setZValue(10)
-            if station_id == self.selected_start:
+            if str(station_id) == str(self.selected_start):
                 highlight = QGraphicsEllipseItem(station_data["x"]-size/2-3, station_data["y"]-size/2-3, size+6, size+6)
                 highlight.setPen(QPen(QColor(76, 175, 80), 4))
                 highlight.setBrush(QBrush(Qt.NoBrush))
                 self.scene.addItem(highlight)
-            elif station_id == self.selected_end:
+            elif str(station_id) == str(self.selected_end):
                 highlight = QGraphicsEllipseItem(station_data["x"]-size/2-3, station_data["y"]-size/2-3, size+6, size+6)
                 highlight.setPen(QPen(QColor(244, 67, 54), 4))
                 highlight.setBrush(QBrush(Qt.NoBrush))
@@ -266,16 +270,17 @@ class BusNetworkVisualization(QMainWindow):
         items = self.scene.items(pos)
         for item in items:
             if isinstance(item, QGraphicsEllipseItem):
-                station_name = item.data(0)  # 改为存储站点名
-                if station_name:
+                station_id = item.data(0)
+                if station_id:
+                    station_name = self.data_manager.stations[station_id]['name']
                     if self.selected_start is None:
-                        self.selected_start = station_name
+                        self.selected_start = station_id
                         self.info_label.setText(f"Start point selected: {station_name}\nPlease click to select end point")
-                    elif self.selected_end is None and station_name != self.selected_start:
-                        self.selected_end = station_name
+                    elif self.selected_end is None and station_id != self.selected_start:
+                        self.selected_end = station_id
                         self.update_path_info()
                     else:
-                        self.selected_start = station_name
+                        self.selected_start = station_id
                         self.selected_end = None
                         self.info_label.setText(f"Start point selected: {station_name}\nPlease click to select end point")
                         self.path_info.setText("")
@@ -285,25 +290,71 @@ class BusNetworkVisualization(QMainWindow):
     def update_path_info(self):
         if not self.selected_start or not self.selected_end:
             return
-        self.all_paths = self.path_analyzer.find_all_paths(self.selected_start, self.selected_end)
-        self.best_path = self.path_analyzer.find_best_path(self.selected_start, self.selected_end)
+        self.all_paths = self.path_analyzer.find_all_paths(str(self.selected_start), str(self.selected_end))
+        self.best_path = self.path_analyzer.find_best_path(str(self.selected_start), str(self.selected_end))
         
-        # 确保路径中的站点ID都是字符串类型
-        self.all_paths = [[str(station) for station in path] for path in self.all_paths]
-        if self.best_path:
-            self.best_path = [str(station) for station in self.best_path]
+        start_name = self.data_manager.stations.get(str(self.selected_start), {}).get("name", str(self.selected_start))
+        end_name = self.data_manager.stations.get(str(self.selected_end), {}).get("name", str(self.selected_end))
+        
+        info_text = f"FROM {start_name} TO {end_name}\n\n"
+        if not self.all_paths:
+            info_text += "No path found."
+        else:
+            info_text += "所有可达路径:\n"
+        
+        for idx, path in enumerate(self.all_paths):
+            path = [str(station) for station in path]
+            path_names = []
+            for station_id in path:
+                station = self.data_manager.stations.get(str(station_id), {})
+                path_names.append(station.get("name", str(station_id)))
             
-        info_text = f"FROM {self.selected_start} TO {self.selected_end}\n\n"
-        info_text += "All reachable paths:\n"
-        for i, path in enumerate(self.all_paths, 1):
-            total_dist = sum(self.data_manager.distances.get((path[j], path[j+1]), 0) for j in range(len(path)-1))
-            path_str = " → ".join(path)
-            info_text += f"{i}. {path_str} (Distance: {total_dist:.2f}km)\n"
+            total_dist = 0.0
+            for j in range(len(path)-1):
+                dist = self.data_manager.distances.get((str(path[j]), str(path[j+1])), 0)
+                total_dist += dist
+            
+            color_idx = idx % len(self.path_colors)
+            color = self.path_colors[color_idx]
+            color_name = self.get_color_name(color)
+            path_str = " → ".join(path_names)
+            info_text += f"<span style='color:rgb({color.red()},{color.green()},{color.blue()})'>■</span> {path_str} (距离: {total_dist:.2f}km)\n"
+            
         if self.best_path:
-            best_dist = sum(self.data_manager.distances.get((self.best_path[j], self.best_path[j+1]), 0) for j in range(len(self.best_path)-1))
-            best_path_str = " → ".join(self.best_path)
-            info_text += f"\nRecommended Path (Shortest):\n{best_path_str} (Distance: {best_dist:.2f}km)"
+            best_path = [str(station) for station in self.best_path]
+            best_path_names = []
+            for station_id in best_path:
+                station = self.data_manager.stations.get(str(station_id), {})
+                best_path_names.append(station.get("name", str(station_id)))
+            
+            best_dist = 0.0
+            for j in range(len(best_path)-1):
+                dist = self.data_manager.distances.get((str(best_path[j]), str(best_path[j+1])), 0)
+                best_dist += dist
+            
+            best_path_str = " → ".join(best_path_names)
+            info_text += f"\n<span style='color:red'>■</span> 推荐路径 (最短距离):\n{best_path_str} (距离: {best_dist:.2f}km)"
+            
         self.path_info.setText(info_text)
+        self.path_info.setTextFormat(Qt.RichText)
+
+    def get_color_name(self, color):
+        if color == QColor(255, 255, 0):
+            return "黄色"
+        elif color == QColor(0, 255, 0):
+            return "绿色"
+        elif color == QColor(0, 255, 255):
+            return "青色"
+        elif color == QColor(255, 0, 255):
+            return "紫色"
+        elif color == QColor(255, 165, 0):
+            return "橙色"
+        elif color == QColor(0, 0, 255):
+            return "蓝色"
+        elif color == QColor(255, 192, 203):
+            return "粉色"
+        else:
+            return "自定义颜色"
 
     def clear_selection(self):
         self.selected_start = None
@@ -334,7 +385,8 @@ class BusNetworkVisualization(QMainWindow):
             msg.setStyleSheet(self.get_messagebox_style())
             msg.warning(self, "Warning", "No stops can be removed!")
             return
-        station_name, ok = QInputDialog.getItem(self, "Remove station", "Select a stop:", list(self.data_manager.stations.keys()))
+        station_names = {v['name']: k for k, v in self.data_manager.stations.items()}
+        station_name, ok = QInputDialog.getItem(self, "Remove station", "Select a stop:", list(station_names.keys()))
         if ok and station_name:
             self.data_manager.remove_station(station_name)
             self.draw_network()
@@ -343,7 +395,8 @@ class BusNetworkVisualization(QMainWindow):
         if not self.data_manager.stations:
             QMessageBox.warning(self, "Warning", "No stops can be updated!")
             return
-        station_name, ok = QInputDialog.getItem(self, "Update station type", "Select a stop:", list(self.data_manager.stations.keys()))
+        station_names = {v['name']: k for k, v in self.data_manager.stations.items()}
+        station_name, ok = QInputDialog.getItem(self, "Update station type", "Select a stop:", list(station_names.keys()))
         if ok and station_name:
             station_type, ok = QInputDialog.getItem(self, "Update station type", "Stop type:", ["Residential", "Commercial", "Mixed", "Industrial"])
             if ok:
@@ -354,13 +407,22 @@ class BusNetworkVisualization(QMainWindow):
         if len(self.data_manager.stations) < 2:
             QMessageBox.warning(self, "warning", "You'll need at least two stops to add a connection!")
             return
-        from_name, ok = QInputDialog.getItem(self, "Add connection", "Start stop:", list(self.data_manager.stations.keys()))
+        station_names = list(self.data_manager.station_name_to_id.keys())
+        from_name, ok = QInputDialog.getItem(self, "Add connection", "Start stop:", station_names)
         if not ok:
             return
-        to_name, ok = QInputDialog.getItem(self, "Add connection", "Target stop:", [n for n in self.data_manager.stations.keys() if n != from_name])
+        to_name, ok = QInputDialog.getItem(self, "Add connection", "Target stop:", [n for n in station_names if n != from_name])
         if not ok:
             return
-        if (from_name, to_name) in self.data_manager.distances:
+
+        from_id = self.data_manager.station_name_to_id.get(from_name)
+        to_id = self.data_manager.station_name_to_id.get(to_name)
+
+        if from_id is None or to_id is None:
+            QMessageBox.warning(self, "Error", "Selected station not found.")
+            return
+
+        if (from_id, to_id) in self.data_manager.distances:
             QMessageBox.warning(self, "Warning", "The connection already exists!")
             return
         distance, ok = QInputDialog.getDouble(self, "Add connection", "distance(km):", 10.0, 0.1, 100.0)
@@ -372,10 +434,22 @@ class BusNetworkVisualization(QMainWindow):
         if len(self.data_manager.distances) == 0:
             QMessageBox.warning(self, "Warning", "No connection can be removed!")
             return
-        from_name, ok = QInputDialog.getItem(self, "Remove connection", "Start stop:", list(self.data_manager.stations.keys()))
+        station_names = list(self.data_manager.station_name_to_id.keys())
+        from_name, ok = QInputDialog.getItem(self, "Remove connection", "Start stop:", station_names)
         if not ok:
             return
-        connections = [to for (f, to) in self.data_manager.distances.keys() if f == from_name]
+        
+        from_id = self.data_manager.station_name_to_id.get(from_name)
+        if not from_id:
+            return
+
+        connections = []
+        for f_id, t_id in self.data_manager.distances.keys():
+            if f_id == from_id:
+                to_station_name = self.data_manager.stations.get(t_id, {}).get('name')
+                if to_station_name:
+                    connections.append(to_station_name)
+
         if not connections:
             QMessageBox.warning(self, "Warning", "There is no exit connection at this stop!")
             return
@@ -385,7 +459,7 @@ class BusNetworkVisualization(QMainWindow):
             self.draw_network()
 
     def find_highest_degree_station_dialog(self):
-        highest_degree_station = self.path_analyzer.find_highest_degree_station()
+        highest_degree_station_id = self.path_analyzer.find_highest_degree_station()
         msg = QMessageBox()
         msg.setStyleSheet("""
             QMessageBox {
@@ -401,8 +475,8 @@ class BusNetworkVisualization(QMainWindow):
                 padding: 5px;
             }
         """)
-        if highest_degree_station:
-            station = self.data_manager.stations[highest_degree_station]
+        if highest_degree_station_id:
+            station = self.data_manager.stations[highest_degree_station_id]
             msg.setWindowTitle("Highest Degree Station")
             msg.setText(f"<b>{station['name']}</b><br>Connections: {len(station['connections'])}")
         else:
@@ -410,62 +484,6 @@ class BusNetworkVisualization(QMainWindow):
             msg.setText("No stations available")
         msg.setStandardButtons(QMessageBox.Ok)
         msg.exec_()
-
-    def remove_station_dialog(self):
-        if not self.data_manager.stations:
-            msg = QMessageBox()
-            msg.setStyleSheet(self.get_messagebox_style())
-            msg.warning(self, "Warning", "No stops can be removed!")
-            return
-        station_name, ok = QInputDialog.getItem(self, "Remove station", "Select a stop:", list(self.data_manager.stations.keys()))
-        if ok and station_name:
-            self.data_manager.remove_station(station_name)
-            self.draw_network()
-
-    def update_station_type_dialog(self):
-        if not self.data_manager.stations:
-            QMessageBox.warning(self, "Warning", "No stops can be updated!")
-            return
-        station_name, ok = QInputDialog.getItem(self, "Update station type", "Select a stop:", list(self.data_manager.stations.keys()))
-        if ok and station_name:
-            station_type, ok = QInputDialog.getItem(self, "Update station type", "Stop type:", ["Residential", "Commercial", "Mixed", "Industrial"])
-            if ok:
-                self.data_manager.update_station_type(station_name, station_type)
-                self.draw_network()
-
-    def add_connection_dialog(self):
-        if len(self.data_manager.stations) < 2:
-            QMessageBox.warning(self, "warning", "You'll need at least two stops to add a connection!")
-            return
-        from_name, ok = QInputDialog.getItem(self, "Add connection", "Start stop:", list(self.data_manager.stations.keys()))
-        if not ok:
-            return
-        to_name, ok = QInputDialog.getItem(self, "Add connection", "Target stop:", [n for n in self.data_manager.stations.keys() if n != from_name])
-        if not ok:
-            return
-        if (from_name, to_name) in self.data_manager.distances:
-            QMessageBox.warning(self, "Warning", "The connection already exists!")
-            return
-        distance, ok = QInputDialog.getDouble(self, "Add connection", "distance(km):", 10.0, 0.1, 100.0)
-        if ok:
-            self.data_manager.add_connection(from_name, to_name, distance)
-            self.draw_network()
-
-    def remove_connection_dialog(self):
-        if len(self.data_manager.distances) == 0:
-            QMessageBox.warning(self, "Warning", "No connection can be removed!")
-            return
-        from_name, ok = QInputDialog.getItem(self, "Remove connection", "Start stop:", list(self.data_manager.stations.keys()))
-        if not ok:
-            return
-        connections = [to for (f, to) in self.data_manager.distances.keys() if f == from_name]
-        if not connections:
-            QMessageBox.warning(self, "Warning", "There is no exit connection at this stop!")
-            return
-        to_name, ok = QInputDialog.getItem(self, "Remove connection", "target stop:", connections)
-        if ok:
-            self.data_manager.remove_connection(from_name, to_name)
-            self.draw_network()
 
     def get_messagebox_style(self):
         return """
@@ -482,91 +500,6 @@ class BusNetworkVisualization(QMainWindow):
                 padding: 5px;
             }
         """
-
-    def init_ui(self):
-        central_widget = QWidget()
-        self.setCentralWidget(central_widget)
-        main_layout = QHBoxLayout(central_widget)
-        main_layout.setSpacing(15)
-        self.setStyleSheet("""
-            QMainWindow { background-color: #f5f5f5; font-family: Arial, sans-serif; }
-            QLabel { font-size: 14px; color: #333; }
-            QPushButton { 
-                background-color: #4CAF50; 
-                color: white; 
-                border: none; 
-                padding: 8px; 
-                border-radius: 4px; 
-                min-width: 120px; 
-                font-size: 14px; 
-                font-family: inherit;  
-            }
-            QPushButton:hover { background-color: #45a049; }
-            QPushButton:pressed { background-color: #3d8b40; }
-            QGraphicsView { border: 1px solid #ddd; background-color: white; border-radius: 4px; }
-            QInputDialog QLabel { font-size: 14px; }
-            QInputDialog QLineEdit { font-size: 14px; height: 25px; }
-            QInputDialog QComboBox { font-size: 14px; height: 25px; }
-            QInputDialog QSpinBox { font-size: 14px; height: 25px; }
-            QInputDialog QDoubleSpinBox { font-size: 14px; height: 25px; }
-        """)
-        control_panel = QWidget()
-        control_panel.setStyleSheet("background-color: white; border-radius: 4px; padding: 10px;")
-        control_layout = QVBoxLayout(control_panel)
-        control_layout.setAlignment(Qt.AlignTop)
-        control_layout.setSpacing(30)
-        control_layout.setContentsMargins(20, 20, 20, 20)
-        info_box = QWidget()
-        info_box.setStyleSheet("background-color: #f9f9f9; border-radius: 4px; padding: 10px;")
-        info_layout = QVBoxLayout(info_box)
-        self.info_label = QLabel("Hover over stations to view information, click to select start and end points")
-        self.info_label.setWordWrap(True)
-        self.info_label.setStyleSheet("font-size: 13px;")
-        info_layout.addWidget(self.info_label)
-        control_layout.addWidget(info_box)
-        path_box = QWidget()
-        path_box.setStyleSheet("background-color: #f9f9f9; border-radius: 4px; padding: 10px;")
-        path_layout = QVBoxLayout(path_box)
-        self.path_info = QLabel("")
-        self.path_info.setWordWrap(True)
-        self.path_info.setStyleSheet("font-size: 13px;")
-        path_layout.addWidget(self.path_info)
-        control_layout.addWidget(path_box)
-        button_box = QWidget()
-        button_layout = QVBoxLayout(button_box)
-        button_layout.setSpacing(10)
-        station_btn_group = QWidget()
-        station_btn_layout = QVBoxLayout(station_btn_group)
-        station_btn_layout.setSpacing(8)
-        buttons = [
-            ("Clear Selection", self.clear_selection, "#f44336"),
-            ("Add Station", self.add_station_dialog, "#2196F3"),
-            ("Remove Station", self.remove_station_dialog, "#ff9800"),
-            ("Update Station Type", self.update_station_type_dialog, "#9c27b0"),
-            ("Add Connection", self.add_connection_dialog, "#4CAF50"),
-            ("Remove Connection", self.remove_connection_dialog, "#607d8b"),
-            ("Find Highest Degree Station", self.find_highest_degree_station_dialog, "#009688")
-        ]
-        for text, callback, color in buttons:
-            btn = QPushButton(text)
-            btn.clicked.connect(callback)
-            btn.setStyleSheet(f"""
-                QPushButton {{ background-color: {color}; color: white; text-align: left; padding-left: 15px; }}
-                QPushButton:hover {{ background-color: {self.darken_color(color)}; }}
-            """)
-            station_btn_layout.addWidget(btn)
-        button_layout.addWidget(station_btn_group)
-        control_layout.addWidget(button_box)
-        main_layout.addWidget(control_panel, stretch=1)
-        self.scene = QGraphicsScene()
-        self.view = CustomGraphicsView(self)
-        self.view.setScene(self.scene)
-        self.view.setRenderHint(QPainter.Antialiasing)
-        self.view.setRenderHint(QPainter.SmoothPixmapTransform)
-        self.view.setDragMode(QGraphicsView.ScrollHandDrag)
-        self.view.setMouseTracking(True)
-        main_layout.addWidget(self.view, stretch=4)
-        self.draw_network()
 
 import math
 class CustomGraphicsView(QGraphicsView):

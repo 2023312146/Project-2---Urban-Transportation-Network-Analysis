@@ -1,6 +1,7 @@
 class NetworkDataManager:
     def __init__(self):
         self.stations = {}
+        self.station_name_to_id = {}
         self.lines = {}
         self.distances = {}
         self.create_fixed_data()
@@ -35,13 +36,14 @@ class NetworkDataManager:
         padding = 80
         
         for i, (name, (lat, lon), stype) in enumerate(zip(station_names, coordinates, station_types), start=1):
+            station_id = str(i)
             norm_lat = (lat - min_lat) / (max_lat - min_lat)
             norm_lon = (lon - min_lon) / (max_lon - min_lon)
             x = padding + norm_lon * (view_width - 2*padding)
             y = padding + (1 - norm_lat) * (view_height - 2*padding)
             
-            self.stations[name] = {
-                "id": i,
+            self.stations[station_id] = {
+                "id": station_id,
                 "name": name,
                 "lat": lat,
                 "lon": lon,
@@ -51,6 +53,7 @@ class NetworkDataManager:
                 "wait_time": 5,
                 "connections": []
             }
+            self.station_name_to_id[name] = station_id
         
         connections = [
             ("Chatelet", "Gare de Lyon", 10.5),
@@ -68,19 +71,25 @@ class NetworkDataManager:
         ]
         
         for from_name, to_name, distance in connections:
-            self.stations[from_name]["connections"].append(to_name)
-            self.distances[(from_name, to_name)] = distance
+            from_id = self.station_name_to_id[from_name]
+            to_id = self.station_name_to_id[to_name]
+            self.stations[from_id]["connections"].append(to_id)
+            self.distances[(from_id, to_id)] = distance
             
         self.lines = {
-            1: {"id": 1, "name": "线路1", "color": (0, 0, 255), "stations": ["Chatelet", "Gare de Lyon", "Bastille", "Nation"]},
-            2: {"id": 2, "name": "线路2", "color": (0, 0, 255), "stations": ["Opera", "Republique", "Montparnasse", "La Defense"]},
-            3: {"id": 3, "name": "线路3", "color": (0, 0, 255), "stations": ["Saint-Lazare", "Chatelet", "Bastille", "Montparnasse"]}
+            1: {"id": 1, "name": "线路1", "color": (0, 0, 255), "stations": [self.station_name_to_id[name] for name in ["Chatelet", "Gare de Lyon", "Bastille", "Nation"]]},
+            2: {"id": 2, "name": "线路2", "color": (0, 0, 255), "stations": [self.station_name_to_id[name] for name in ["Opera", "Republique", "Montparnasse", "La Defense"]]},
+            3: {"id": 3, "name": "线路3", "color": (0, 0, 255), "stations": [self.station_name_to_id[name] for name in ["Saint-Lazare", "Chatelet", "Bastille", "Montparnasse"]]}
         }
 
     def add_station(self, name, x, y, station_type, wait_time=5):
-        if name in self.stations:
+        if name in self.station_name_to_id:
             raise ValueError(f"Station {name} already exists")
-        self.stations[name] = {
+        
+        new_id = str(max([int(id) for id in self.stations.keys()] + [0]) + 1)
+        
+        self.stations[new_id] = {
+            "id": new_id,
             "name": name,
             "x": x,
             "y": y,
@@ -88,34 +97,46 @@ class NetworkDataManager:
             "wait_time": wait_time,
             "connections": []
         }
+        self.station_name_to_id[name] = new_id
 
     def remove_station(self, name):
-        if name in self.stations:
-            del self.stations[name]
+        if name in self.station_name_to_id:
+            station_id = self.station_name_to_id[name]
+            del self.stations[station_id]
+            del self.station_name_to_id[name]
+            
             for station in self.stations.values():
-                if name in station["connections"]:
-                    station["connections"].remove(name)
+                if station_id in station["connections"]:
+                    station["connections"].remove(station_id)
             for line in self.lines.values():
-                if name in line["stations"]:
-                    line["stations"].remove(name)
-            to_remove = [(f, t) for (f, t) in self.distances if f == name or t == name]
+                if station_id in line["stations"]:
+                    line["stations"].remove(station_id)
+            to_remove = [(f, t) for (f, t) in self.distances if f == station_id or t == station_id]
             for key in to_remove:
                 del self.distances[key]
 
     def update_station_type(self, name, new_type):
-        if name in self.stations:
-            self.stations[name]["type"] = new_type
+        if name in self.station_name_to_id:
+            station_id = self.station_name_to_id[name]
+            self.stations[station_id]["type"] = new_type
 
     def add_connection(self, from_name, to_name, distance):
-        if from_name not in self.stations or to_name not in self.stations:
+        if from_name not in self.station_name_to_id or to_name not in self.station_name_to_id:
             raise ValueError("One or both stations do not exist")
-        if (from_name, to_name) in self.distances:
+        
+        from_id = self.station_name_to_id[from_name]
+        to_id = self.station_name_to_id[to_name]
+        
+        if (from_id, to_id) in self.distances:
             raise ValueError("Connection already exists")
-        self.distances[(from_name, to_name)] = distance
-        self.stations[from_name]["connections"].append(to_name)
+        self.distances[(from_id, to_id)] = distance
+        self.stations[from_id]["connections"].append(to_id)
 
     def remove_connection(self, from_name, to_name):
-        if (from_name, to_name) in self.distances:
-            del self.distances[(from_name, to_name)]
-            if to_name in self.stations[from_name]["connections"]:
-                self.stations[from_name]["connections"].remove(to_name)
+        if from_name in self.station_name_to_id and to_name in self.station_name_to_id:
+            from_id = self.station_name_to_id[from_name]
+            to_id = self.station_name_to_id[to_name]
+            if (from_id, to_id) in self.distances:
+                del self.distances[(from_id, to_id)]
+                if to_id in self.stations[from_id]["connections"]:
+                    self.stations[from_id]["connections"].remove(to_id)
