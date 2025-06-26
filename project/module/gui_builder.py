@@ -115,6 +115,25 @@ class GUIBuilder(QMainWindow):
         self.view.setScene(self.scene)
         main_layout.addWidget(self.view, stretch=4)
 
+        # 添加右上角图例注释
+        self.legend_label = QLabel(self)
+        self.legend_label.setStyleSheet("background: rgba(255,255,255,0.93); border-radius:8px; padding:10px; border:1px solid #ddd;")
+        self.legend_label.setText(
+            "<span style='font-size:30px; font-weight:bold;'>Color annotations</span><br>"
+            "<span style='font-size:20px; color:#0000ff;'>■</span> <span style='font-size:20px;'>Normal Path</span><br>"
+            "<span style='font-size:20px; color:#ff0000;'>■</span> <span style='font-size:20px;'>Best Path</span><br>"
+            "<span style='font-size:20px; color:#ef5350;'>■</span> <span style='font-size:20px;'>Commercial</span><br>"
+            "<span style='font-size:20px; color:#66bb6a;'>■</span> <span style='font-size:20px;'>Residential</span><br>"
+            "<span style='font-size:20px; color:#42a5f5;'>■</span> <span style='font-size:20px;'>Industrial</span><br>"
+            "<span style='font-size:20px; color:#ffca28;'>■</span> <span style='font-size:20px;'>Mixed</span>"
+        )
+        self.legend_label.setFixedWidth(320)
+        self.legend_label.setFixedHeight(220)
+        self.legend_label.setAlignment(Qt.AlignLeft | Qt.AlignTop)
+        self.legend_label.setAttribute(Qt.WA_TransparentForMouseEvents)
+        self.legend_label.raise_()
+        self.update_legend_position()
+
     def darken_color(self, hex_color, amount=0.7):
         hex_color = hex_color.lstrip('#')
         rgb = tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
@@ -139,3 +158,13 @@ class GUIBuilder(QMainWindow):
 
     def update_path_info(self):
         self.path_display.update_path_info()
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self.update_legend_position()
+
+    def update_legend_position(self):
+        margin = 20
+        x = self.width() - self.legend_label.width() - margin
+        y = margin
+        self.legend_label.move(x, y)

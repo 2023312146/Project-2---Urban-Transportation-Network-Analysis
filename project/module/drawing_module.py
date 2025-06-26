@@ -180,46 +180,6 @@ class DrawingModule:
                 font.setBold(True)
                 text.setFont(font)
                 mw.scene.addItem(text)
-        legend_items = [
-            (QColor(255, 255, 255), "Color annotations:"),
-            (None, ""),
-            (QColor(0, 0, 255), "Normal Path"),
-            (QColor(255, 0, 0), "Best Path"),
-            (QColor(239, 83, 80), "Commercial"),
-            (QColor(102, 187, 106), "Residential"),
-            (QColor(66, 165, 245), "Industrial"),
-            (QColor(255, 202, 40), "Mixed")
-        ]
-        legend_x = mw.width() - 220
-        legend_y = 30
-        legend_w = 180
-        legend_h = 120
-        legend_bg = QGraphicsRectItem(legend_x, legend_y, legend_w, legend_h)
-        legend_bg.setBrush(QColor(255, 255, 255, 230))
-        legend_bg.setPen(QPen(Qt.NoPen))
-        legend_bg.setZValue(100)
-        mw.scene.addItem(legend_bg)
-        for i, (color, text) in enumerate(legend_items):
-            if color is not None:
-                rect = QGraphicsRectItem(legend_x + 15, legend_y + 15 + i*25, 20, 20)
-                rect.setBrush(color)
-                rect.setPen(QPen(Qt.NoPen))
-                rect.setZValue(101)
-                mw.scene.addItem(rect)
-            label = QGraphicsTextItem(text)
-            if i == 0:
-                label.setPos(legend_x + legend_w/2 - label.boundingRect().width()/2, legend_y + 15)
-                font = QFont()
-                font.setPointSize(13)
-                font.setBold(True)
-            else:
-                label.setPos(legend_x + 45, legend_y + 13 + i*25)
-                font = QFont()
-                font.setPointSize(11)
-            label.setDefaultTextColor(QColor(33, 33, 33))
-            label.setFont(font)
-            label.setZValue(101)
-            mw.scene.addItem(label)
 
     # 新增：网格绘制方法（解决AttributeError）
     def draw_grid(self):
