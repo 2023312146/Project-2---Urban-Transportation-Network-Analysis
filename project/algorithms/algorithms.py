@@ -1,17 +1,7 @@
-import heapq
 from project.module.stop import Stop
 from project.module.network import TransportNetwork
 
 def dijkstra(network: TransportNetwork, start_stop: Stop, end_stop: Stop):
-    """
-    使用Dijkstra算法查找两个站点之间的最短路径。
-    使用列表代替heapq实现优先队列
-
-    :param network: TransportNetwork 对象
-    :param start_stop: 起始 Stop 对象
-    :param end_stop: 终点 Stop 对象
-    :return: 一个元组，包含最短路径（Stop对象列表）和总距离。如果找不到路径，则返回(None, float('inf'))。
-    """
     if start_stop not in network.adjacency_list or end_stop not in network.adjacency_list:
         return None, float('inf')
 
@@ -58,16 +48,6 @@ def dijkstra(network: TransportNetwork, start_stop: Stop, end_stop: Stop):
 
 
 def find_all_paths(network: TransportNetwork, start_stop: Stop, end_stop: Stop, path=None, distance=0):
-    """
-    递归查找两个站点之间的所有可能路径。
-
-    :param network: TransportNetwork 对象
-    :param start_stop: 起始 Stop 对象
-    :param end_stop: 终点 Stop 对象
-    :param path: 当前路径 (内部递归使用)
-    :param distance: 当前距离 (内部递归使用)
-    :return: 一个包含元组(路径, 距离)的列表。
-    """
     if path is None:
         path = []
     path = path + [start_stop]

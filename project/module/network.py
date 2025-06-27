@@ -3,8 +3,8 @@ import csv
 
 class TransportNetwork:
     def __init__(self):
-        self.adjacency_list = {}  # 邻接表：{Stop对象: [(Stop对象, 距离), ...]}
-        self.stops = {}  # stop_ID 到 Stop 对象的映射
+        self.adjacency_list = {} 
+        self.stops = {} 
     
     def add_stop(self, stop):
         if not isinstance(stop, Stop):
