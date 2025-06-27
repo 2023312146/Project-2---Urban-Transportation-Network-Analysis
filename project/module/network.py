@@ -28,7 +28,7 @@ class TransportNetwork:
 
     @classmethod
     def load_stops_from_csv(cls, file_path):
-        """从CSV文件加载站点"""
+        """Load the stops from a CSV file"""
         network = cls()
         with open(file_path, 'r', encoding='utf-8') as file:
             reader = csv.DictReader(file)
@@ -38,7 +38,7 @@ class TransportNetwork:
         return network
     
     def load_routes_from_csv(self, file_path):
-        """从CSV文件加载路线"""
+        """Load the routes from a CSV file"""
         with open(file_path, 'r', encoding='utf-8') as file:
             reader = csv.DictReader(file)
             for row in reader:
