@@ -1,4 +1,4 @@
-from project.module.stop import ZoneType  # 确保导入ZoneType
+from project.module.stop import ZoneType  
 
 class NetworkDataManager:
     def __init__(self):

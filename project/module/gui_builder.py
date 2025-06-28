@@ -122,7 +122,9 @@ class GUIBuilder(QMainWindow):
             "<span style='font-size:30px; font-weight:bold;'>Color annotations</span><br>----------------<br>"
             "<span style='font-size:20px;'>Path Type</span><br>"
             "<span style='font-size:20px; color:#0000ff;'>■</span> <span style='font-size:20px;'>Normal Path</span><br>"
-            "<span style='font-size:20px; color:#ff0000;'>■</span> <span style='font-size:20px;'>Best Path</span><br>----------------<br>"
+            "<span style='font-size:20px; color:#ff0000;'>■</span> <span style='font-size:20px;'>Shortest Path</span><br>"
+            "<span style='font-size:20px; color:#00ff00;'>■</span> <span style='font-size:20px;'>Most Efficient Path</span><br>"
+            "<span style='font-size:20px; color:#0066cc;'>■</span> <span style='font-size:20px;'>Most Efficient Path</span><br>----------------<br>"
             "<span style='font-size:20px;'>Zone Type</span><br>"
             "<span style='font-size:20px; color:#ef5350;'>■</span> <span style='font-size:20px;'>Commercial</span><br>"
             "<span style='font-size:20px; color:#66bb6a;'>■</span> <span style='font-size:20px;'>Residential</span><br>"
@@ -130,7 +132,7 @@ class GUIBuilder(QMainWindow):
             "<span style='font-size:20px; color:#ffca28;'>■</span> <span style='font-size:20px;'>Mixed</span>"
         )
         self.legend_label.setFixedWidth(320)
-        self.legend_label.setFixedHeight(270)
+        self.legend_label.setFixedHeight(300)
         self.legend_label.setAlignment(Qt.AlignLeft | Qt.AlignTop)
         self.legend_label.setAttribute(Qt.WA_TransparentForMouseEvents)
         self.legend_label.raise_()
@@ -148,6 +150,19 @@ class GUIBuilder(QMainWindow):
         self.all_paths = []
         self.best_path = []
         self.show_only_best_path = False
+        # 清除路径属性
+        if hasattr(self, 'shortest_path'):
+            delattr(self, 'shortest_path')
+        if hasattr(self, 'efficiency_path'):
+            delattr(self, 'efficiency_path')
+        if hasattr(self, 'shortest_distance'):
+            delattr(self, 'shortest_distance')
+        if hasattr(self, 'efficiency_distance'):
+            delattr(self, 'efficiency_distance')
+        if hasattr(self, 'efficiency_value'):
+            delattr(self, 'efficiency_value')
+        if hasattr(self, 'paths_are_same'):
+            delattr(self, 'paths_are_same')
         self.info_label.setText("Hover over stations to view information, click to select start and end points")
         self.path_info.setText("")
         self.draw_network()

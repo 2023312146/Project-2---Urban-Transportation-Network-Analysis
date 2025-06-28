@@ -1,16 +1,17 @@
 import unittest
 from project.module.stop import Stop, ZoneType
 from project.module.network import TransportNetwork
-from project.algorithms.algorithms import dijkstra, find_all_paths
+from project.algorithms.dijkstra import dijkstra
+from project.algorithms.dfs import find_all_paths
 
 class TestAlgorithms(unittest.TestCase):
     def setUp(self):
-        # 创建测试用的站点和网络，Stop对象全程复用
+
         self.stop1 = Stop(1, "A", 0, 0, ZoneType.RESIDENTIAL)
         self.stop2 = Stop(2, "B", 1, 1, ZoneType.COMMERCIAL)
         self.stop3 = Stop(3, "C", 2, 2, ZoneType.INDUSTRIAL)
         self.stop4 = Stop(4, "D", 3, 3, ZoneType.MIXED)
-        self.stop5 = Stop(5, "E", 4, 4, ZoneType.URBAN)  # 孤立点
+        self.stop5 = Stop(5, "E", 4, 4, ZoneType.URBAN)  
         self.network = TransportNetwork()
         for stop in [self.stop1, self.stop2, self.stop3, self.stop4, self.stop5]:
             self.network.add_stop(stop)

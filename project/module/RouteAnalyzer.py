@@ -1,4 +1,5 @@
-from project.algorithms.algorithms import dijkstra, find_all_paths as find_all_paths_algo
+from project.algorithms.dijkstra import dijkstra
+from project.algorithms.dfs import find_all_paths as find_all_paths_algo
 from project.module.network import TransportNetwork
 from project.module.stop import Stop, ZoneType
 

@@ -1,11 +1,9 @@
 from PyQt5.QtWidgets import (
-    QGraphicsScene, QGraphicsLineItem, QGraphicsTextItem, QGraphicsEllipseItem,
-    QGraphicsRectItem, QGraphicsPolygonItem, QGraphicsView
+    QGraphicsScene, QGraphicsLineItem,  QGraphicsView, QGraphicsTextItem, QGraphicsEllipseItem, QGraphicsPolygonItem
 )
-from PyQt5.QtCore import QPointF, Qt
-from PyQt5.QtGui import QColor, QPen, QFont, QPolygonF, QBrush, QPainter
+from PyQt5.QtGui import QColor, QPen,QPainter, QFont, QBrush, QPolygonF
 import math
-
+from PyQt5.QtCore import Qt, QPointF
 class DrawingModule:
     def __init__(self, main_window):
         self.main_window = main_window  # 持有主窗口引用
@@ -25,29 +23,90 @@ class DrawingModule:
         mw.scene.clear()
         self.draw_grid()
         if mw.best_path and mw.show_only_best_path:
-            for i in range(len(mw.best_path)-1):
-                from_id = str(mw.best_path[i])
-                to_id = str(mw.best_path[i+1])
+            # 收集所有需要绘制的边
+            edges_to_draw = {}
+            
+            # 处理最短路径的边
+            if hasattr(mw, 'shortest_path') and mw.shortest_path:
+                for i in range(len(mw.shortest_path)-1):
+                    from_id = str(mw.shortest_path[i])
+                    to_id = str(mw.shortest_path[i+1])
+                    edge_key = (from_id, to_id)
+                    if edge_key not in edges_to_draw:
+                        edges_to_draw[edge_key] = {'shortest': True, 'efficiency': False}
+                    else:
+                        edges_to_draw[edge_key]['shortest'] = True
+            
+            # 处理最高效路径的边
+            if hasattr(mw, 'efficiency_path') and mw.efficiency_path:
+                for i in range(len(mw.efficiency_path)-1):
+                    from_id = str(mw.efficiency_path[i])
+                    to_id = str(mw.efficiency_path[i+1])
+                    edge_key = (from_id, to_id)
+                    if edge_key not in edges_to_draw:
+                        edges_to_draw[edge_key] = {'shortest': False, 'efficiency': True}
+                    else:
+                        edges_to_draw[edge_key]['efficiency'] = True
+            
+            # 绘制所有边
+            for (from_id, to_id), edge_info in edges_to_draw.items():
                 if from_id not in mw.data_manager.stations or to_id not in mw.data_manager.stations:
                     continue
-                if (from_id, to_id) in mw.data_manager.distances:
-                    from_station = mw.data_manager.stations[from_id]
-                    to_station = mw.data_manager.stations[to_id]
-                    line = QGraphicsLineItem(from_station["x"], from_station["y"], to_station["x"], to_station["y"])
-                    line.setPen(QPen(QColor(255, 0, 0), 5))
-                    mw.scene.addItem(line)
-                    self.draw_arrow(line.line(), QColor(255, 0, 0))
-                    distance = mw.data_manager.distances[(from_id, to_id)]
-                    mid_x = (from_station["x"] + to_station["x"]) / 2
-                    mid_y = (from_station["y"] + to_station["y"]) / 2
-                    dist_text = QGraphicsTextItem(f"{distance:.1f}km")
-                    dist_text.setPos(mid_x + 10, mid_y + 10)
+                if (from_id, to_id) not in mw.data_manager.distances:
+                    continue
+                
+                from_station = mw.data_manager.stations[from_id]
+                to_station = mw.data_manager.stations[to_id]
+                
+                # 检查是否两条路径都包含这条边
+                is_in_both = edge_info['shortest'] and edge_info['efficiency']
+                
+                if is_in_both:
+                    # 绘制并行的两条线
+                    self.draw_parallel_lines(from_station, to_station)
+                else:
+                    # 绘制单条线
+                    if edge_info['shortest']:
+                        # 绘制红色线（最短路径）
+                        line = QGraphicsLineItem(from_station["x"], from_station["y"], to_station["x"], to_station["y"])
+                        line.setPen(QPen(QColor(255, 0, 0), 5))
+                        mw.scene.addItem(line)
+                        self.draw_arrow(line.line(), QColor(255, 0, 0))
+                    elif edge_info['efficiency']:
+                        # 绘制绿色线（最高效路径）
+                        line = QGraphicsLineItem(from_station["x"], from_station["y"], to_station["x"], to_station["y"])
+                        line.setPen(QPen(QColor(0, 255, 0), 5))  
+                        mw.scene.addItem(line)
+                        self.draw_arrow(line.line(), QColor(0, 255, 0))
+                
+                # 显示距离标签
+                distance = mw.data_manager.distances[(from_id, to_id)]
+                mid_x = (from_station["x"] + to_station["x"]) / 2
+                mid_y = (from_station["y"] + to_station["y"]) / 2
+                dist_text = QGraphicsTextItem(f"{distance:.1f}km")
+                dist_text.setPos(mid_x + 10, mid_y + 10)
+                
+                # 根据边的类型设置标签颜色
+                if is_in_both:
+                    dist_text.setDefaultTextColor(Qt.darkRed)  # 重叠边用红色标签
+                elif edge_info['shortest']:
                     dist_text.setDefaultTextColor(Qt.darkRed)
-                    font = QFont()
-                    font.setPointSize(10)
-                    dist_text.setFont(font)
-                    mw.scene.addItem(dist_text)
-            for station_id in mw.best_path:
+                else:
+                    dist_text.setDefaultTextColor(Qt.darkGreen)
+                
+                font = QFont()
+                font.setPointSize(10)
+                dist_text.setFont(font)
+                mw.scene.addItem(dist_text)
+            
+            # 绘制所有路径中的站点
+            all_path_stations = set()
+            if hasattr(mw, 'shortest_path') and mw.shortest_path:
+                all_path_stations.update(mw.shortest_path)
+            if hasattr(mw, 'efficiency_path') and mw.efficiency_path:
+                all_path_stations.update(mw.efficiency_path)
+            
+            for station_id in all_path_stations:
                 station_id = str(station_id)
                 if station_id not in mw.data_manager.stations:
                     continue
@@ -223,3 +282,40 @@ class DrawingModule:
         arrow_item.setBrush(color)
         arrow_item.setPen(QPen(color, 1))
         self.main_window.scene.addItem(arrow_item)
+
+    def draw_parallel_lines(self, from_station, to_station):
+        """绘制并行的两条线（左边红线，右边绿线）"""
+        mw = self.main_window
+        
+        # 计算垂直于路径方向的偏移
+        dx = to_station["x"] - from_station["x"]
+        dy = to_station["y"] - from_station["y"]
+        length = math.sqrt(dx*dx + dy*dy)
+        
+        if length > 0:
+            # 单位垂直向量
+            perp_x = -dy / length
+            perp_y = dx / length
+            offset = 3  # 偏移距离
+            
+            # 绘制左边的红线
+            left_from_x = from_station["x"] + perp_x * offset
+            left_from_y = from_station["y"] + perp_y * offset
+            left_to_x = to_station["x"] + perp_x * offset
+            left_to_y = to_station["y"] + perp_y * offset
+            
+            left_line = QGraphicsLineItem(left_from_x, left_from_y, left_to_x, left_to_y)
+            left_line.setPen(QPen(QColor(255, 0, 0), 3))  
+            mw.scene.addItem(left_line)
+            self.draw_arrow(left_line.line(), QColor(255, 0, 0))
+            
+            # 绘制右边的绿线
+            right_from_x = from_station["x"] - perp_x * offset
+            right_from_y = from_station["y"] - perp_y * offset
+            right_to_x = to_station["x"] - perp_x * offset
+            right_to_y = to_station["y"] - perp_y * offset
+            
+            right_line = QGraphicsLineItem(right_from_x, right_from_y, right_to_x, right_to_y)
+            right_line.setPen(QPen(QColor(0, 255, 0), 3))  
+            mw.scene.addItem(right_line)
+            self.draw_arrow(right_line.line(), QColor(0, 255, 0))

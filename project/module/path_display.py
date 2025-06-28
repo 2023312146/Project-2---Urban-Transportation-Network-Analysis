@@ -15,6 +15,29 @@ class PathDisplay:
             include_efficiency=True
         )
         self.main_window.best_path = self.path_analyzer.find_best_path(str(self.main_window.selected_start), str(self.main_window.selected_end))
+        
+        # 获取路径比较结果，包含最短路径和最高效路径
+        compare_result = self.path_analyzer.compare_best_paths(
+            str(self.main_window.selected_start),
+            str(self.main_window.selected_end)
+        )
+        
+        # 存储路径信息到主窗口
+        if compare_result:
+            self.main_window.shortest_path = compare_result['dijkstra_path']  # 最短路径
+            self.main_window.efficiency_path = compare_result['efficiency_path']  # 最高效路径
+            self.main_window.shortest_distance = compare_result['dijkstra_distance']
+            self.main_window.efficiency_distance = compare_result['efficiency_distance']
+            self.main_window.efficiency_value = compare_result['efficiency_value']
+            self.main_window.paths_are_same = compare_result['is_same']
+        else:
+            self.main_window.shortest_path = []
+            self.main_window.efficiency_path = []
+            self.main_window.shortest_distance = 0.0
+            self.main_window.efficiency_distance = 0.0
+            self.main_window.efficiency_value = 0.0
+            self.main_window.paths_are_same = False
+        
         self.main_window.show_only_best_path = True
         start_name = self.data_manager.stations.get(str(self.main_window.selected_start), {}).get("name", str(self.main_window.selected_start))
         end_name = self.data_manager.stations.get(str(self.main_window.selected_end), {}).get("name", str(self.main_window.selected_end))
@@ -33,43 +56,25 @@ class PathDisplay:
             efficiency = path_info.get('efficiency', 0.0)
             path_str = " → ".join(path_names)
             info_text += f"{path_str} (distance: {total_dist:.2f}km, efficiency: {efficiency:.2f}km/h)<br>-----------<br>"
-        if self.main_window.best_path:
+        
+        # 显示最短路径信息
+        if self.main_window.shortest_path:
             info_text += "<br>"
-            best_path = [str(station) for station in self.main_window.best_path]
-            best_path_names = []
-            for station_id in best_path:
+            shortest_path_names = []
+            for station_id in self.main_window.shortest_path:
                 station = self.data_manager.stations.get(str(station_id), {})
-                best_path_names.append(station.get("name", str(station_id)))
-            # 获取最短路径效率
-            compare_result = self.path_analyzer.compare_best_paths(
-                str(self.main_window.selected_start),
-                str(self.main_window.selected_end)
-            )
-            best_dist = 0.0
-            best_eff = 0.0
-            if compare_result:
-                best_dist = compare_result['dijkstra_distance']
-                # 重新计算最短路径的效率
-                best_eff = 0.0
-                if compare_result['dijkstra_path']:
-                    # 复用RouteAnalyzer的效率计算逻辑
-                    best_eff = self.path_analyzer._calculate_efficiency(
-                        [self.path_analyzer._create_transport_network()[1][sid] for sid in compare_result['dijkstra_path']],
-                        best_dist
-                    )
-            best_path_str = " → ".join(best_path_names)
-            info_text += f"<b>Recommended Path (Minimum Distance):</b><br>{best_path_str} (distance: {best_dist:.2f}km, efficiency: {best_eff:.2f}km/h)"
+                shortest_path_names.append(station.get("name", str(station_id)))
+            shortest_path_str = " → ".join(shortest_path_names)
+            info_text += f"<b>Shortest Path (Red):</b><br>{shortest_path_str} (distance: {self.main_window.shortest_distance:.2f}km)<br>"
 
-            # 展示效率最高路径
-            if compare_result:
-                eff_path_ids = compare_result['efficiency_path']
-                eff_path_names = []
-                for station_id in eff_path_ids:
-                    station = self.data_manager.stations.get(str(station_id), {})
-                    eff_path_names.append(station.get("name", str(station_id)))
-                eff_dist = compare_result['efficiency_distance']
-                eff_value = compare_result['efficiency_value']
-                eff_path_str = " → ".join(eff_path_names)
-                info_text += f"<br><b>Recommended Path (Maximum Efficiency):</b><br>{eff_path_str} (distance: {eff_dist:.2f}km, efficiency: {eff_value:.2f}km/h)"
+        # 显示最高效路径信息
+        if self.main_window.efficiency_path:
+            efficiency_path_names = []
+            for station_id in self.main_window.efficiency_path:
+                station = self.data_manager.stations.get(str(station_id), {})
+                efficiency_path_names.append(station.get("name", str(station_id)))
+            efficiency_path_str = " → ".join(efficiency_path_names)
+            info_text += f"<b>Most Efficient Path (Green):</b><br>{efficiency_path_str} (distance: {self.main_window.efficiency_distance:.2f}km, efficiency: {self.main_window.efficiency_value:.2f}km/h)<br>"
+        
         self.main_window.path_info.setText(info_text)
         self.main_window.path_info.setTextFormat(Qt.RichText)
