@@ -1,4 +1,5 @@
 import unittest
+import os
 from project.module.network import TransportNetwork
 from project.module.stop import Stop, ZoneType
 
@@ -11,6 +12,10 @@ class TestTransportNetwork(unittest.TestCase):
         self.network = TransportNetwork()
         self.stop1 = Stop(1, "Stop 1", 0.0, 0.0, ZoneType.RESIDENTIAL)
         self.stop2 = Stop(2, "Stop 2", 1.0, 1.0, ZoneType.COMMERCIAL)
+        
+        # 获取项目根目录路径
+        self.project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        self.data_dir = os.path.join(self.project_root, "data")
         
     def test_add_stop(self):
         """Test adding stops to the network"""
@@ -38,8 +43,8 @@ class TestTransportNetwork(unittest.TestCase):
     def test_load_from_csv(self):
         """Test loading network data from CSV files"""
         """测试从CSV文件加载网络数据"""
-        stops_path = "D:\\360MoveData\\Users\\DELL\\Desktop\\Project\\efrei2025\\data\\urban_transport_network_stops.csv"
-        routes_path = "D:\\360MoveData\\Users\\DELL\\Desktop\\Project\\efrei2025\\data\\urban_transport_network_routes.csv"
+        stops_path = os.path.join(self.data_dir, "urban_transport_network_stops.csv")
+        routes_path = os.path.join(self.data_dir, "urban_transport_network_routes.csv")
         
         """Test loading stops"""
         """测试加载站点"""
@@ -66,11 +71,11 @@ class TestTransportNetwork(unittest.TestCase):
         chatelet_routes = network.adjacency_list[chatelet]
         self.assertEqual(len(chatelet_routes), 2)
         self.assertEqual(chatelet_routes[0][1], 10.5)
-        
+    
     def test_stop_details(self):
         """Test stop details and names from CSV data"""
         """测试CSV数据中的站点详情和名称"""
-        stops_path = "D:\\360MoveData\\Users\\DELL\\Desktop\\Project\\efrei2025\\data\\urban_transport_network_stops.csv"
+        stops_path = os.path.join(self.data_dir, "urban_transport_network_stops.csv")
         network = TransportNetwork.load_stops_from_csv(stops_path)
         
         """Verify all stations"""
@@ -86,8 +91,8 @@ class TestTransportNetwork(unittest.TestCase):
     def test_route_details(self):
         """Test route connection details from CSV data"""
         """测试CSV数据中的路线连接详情"""
-        stops_path = "D:\\360MoveData\\Users\\DELL\\Desktop\\Project\\efrei2025\\data\\urban_transport_network_stops.csv"
-        routes_path = "D:\\360MoveData\\Users\\DELL\\Desktop\\Project\\efrei2025\\data\\urban_transport_network_routes.csv"
+        stops_path = os.path.join(self.data_dir, "urban_transport_network_stops.csv")
+        routes_path = os.path.join(self.data_dir, "urban_transport_network_routes.csv")
         
         network = TransportNetwork.load_stops_from_csv(stops_path)
         network.load_routes_from_csv(routes_path)

@@ -2,7 +2,6 @@ import unittest
 import os
 from project.module.network import TransportNetwork
 from project.module.stop import Stop, ZoneType  
-from project.module.get_from_csv import load_stops_from_csv, load_routes_from_csv    
 
 class TestIO(unittest.TestCase):
     """Test cases for CSV file input/output operations"""
@@ -27,19 +26,19 @@ class TestIO(unittest.TestCase):
 
     def test_load_stops(self):
 
-        load_stops_from_csv(self.network, self.stops_file)
-        self.assertEqual(len(self.network.stops), 2)
-        self.assertIn(1, self.network.stops)
-        self.assertIn(2, self.network.stops)
-        self.assertEqual(self.network.stops[1].name, 'A')
+        network = TransportNetwork.load_stops_from_csv(self.stops_file)
+        self.assertEqual(len(network.stops), 2)
+        self.assertIn(1, network.stops)
+        self.assertIn(2, network.stops)
+        self.assertEqual(network.stops[1].name, 'A')
 
     def test_load_routes(self):
  
-        load_stops_from_csv(self.network, self.stops_file)
-        load_routes_from_csv(self.network, self.routes_file)
-        stop1 = self.network.stops[1]
-        stop2 = self.network.stops[2]
-        self.assertIn((stop2, 10.0), self.network.adjacency_list[stop1])
+        network = TransportNetwork.load_stops_from_csv(self.stops_file)
+        network.load_routes_from_csv(self.routes_file)
+        stop1 = network.stops[1]
+        stop2 = network.stops[2]
+        self.assertIn((stop2, 10.0), network.adjacency_list[stop1])
 
 if __name__ == '__main__':
     unittest.main()
