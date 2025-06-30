@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import MagicMock, patch
 from PyQt5.QtCore import Qt
-from project.module.path_display import PathDisplay
+from project.analysis.path_display import PathDisplay
 from typing import Optional
 
 

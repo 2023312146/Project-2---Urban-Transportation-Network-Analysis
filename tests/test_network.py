@@ -1,7 +1,7 @@
 import unittest
 import os
-from project.module.network import TransportNetwork
-from project.module.stop import Stop, ZoneType
+from project.core.network import TransportNetwork
+from project.core.stop import Stop, ZoneType
 
 class TestTransportNetwork(unittest.TestCase):
     """Test cases for transport network functionality"""

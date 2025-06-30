@@ -1,5 +1,5 @@
-from project.module.stop import Stop
-from project.module.network import TransportNetwork
+from project.data_structures.stop import Stop
+from project.data_structures.network import TransportNetwork
 
 def find_all_paths(network: TransportNetwork, start_stop: Stop, end_stop: Stop, path=None, distance=0):
     """

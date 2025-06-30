@@ -1,7 +1,7 @@
 import unittest
-from project.module.RouteAnalyzer import PathAnalyzer
-from project.module.NetworkDataManager import NetworkDataManager
-from project.module.stop import ZoneType
+from project.analysis.RouteAnalyzer import PathAnalyzer
+from project.core.NetworkDataManager import NetworkDataManager
+from project.core.stop import ZoneType
 
 """Test class for route analyzer functionality"""
 """路径分析器功能测试类"""

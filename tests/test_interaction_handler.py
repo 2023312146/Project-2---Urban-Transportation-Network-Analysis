@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import MagicMock
 from PyQt5.QtCore import QPointF
-from project.module.interaction_handler import InteractionHandler
+from project.gui.interaction_handler import InteractionHandler
 
 class DummyMainWindow:
     """ testing interaction handler"""

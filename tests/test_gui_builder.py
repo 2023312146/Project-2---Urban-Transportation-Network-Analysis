@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import MagicMock, patch
 from PyQt5.QtWidgets import QApplication, QMainWindow
 from PyQt5.QtCore import Qt, QPointF
-from project.module.gui_builder import GUIBuilder
+from project.gui.gui_builder import GUIBuilder
 import sys
 
 app = QApplication.instance() or QApplication(sys.argv)

@@ -1,0 +1,10 @@
+stop_id,name,latitude,longitude,zone_type
+1,Chatelet,48.8588443,2.3470599,Residential
+2,Gare de Lyon,48.8443221,2.3748736,Commercial
+3,Bastille,48.853,2.3691,Industrial
+4,Nation,48.8470364,2.3955517,Residential
+5,Opera,48.87093,2.3325,Industrial
+6,Republique,48.867653,2.363378,Commercial
+7,Montparnasse,48.84216,2.321732,Residential
+8,La Defense,48.891342,2.237151,Mixed
+9,Saint-Lazare,48.87561,2.325482,Commercial

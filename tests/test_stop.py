@@ -1,6 +1,6 @@
 import unittest
-from project.module.stop import Stop, ZoneType
-from project.module.network import TransportNetwork
+from project.core.stop import Stop, ZoneType
+from project.core.network import TransportNetwork
 
 """Test class for Stop functionality"""
 """站点功能测试类"""
