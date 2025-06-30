@@ -192,5 +192,20 @@ class TestDrawingModule(unittest.TestCase):
         self.drawing.draw_network()
         self.main_window.scene.clear.assert_called()
 
+    def test_draw_axes(self):
+        """测试经纬度坐标轴绘制"""
+        # 设置场景尺寸
+        self.main_window.scene.sceneRect.return_value = QRectF(0, 0, 1200, 900)
+        # 模拟数据管理器（需包含_convert_geo_to_gui_coords方法）
+        self.main_window.data_manager = MagicMock()
+        self.main_window.data_manager._convert_geo_to_gui_coords.side_effect = lambda lat, lon: (
+            80 + (lon - 2.237151)/(2.3955517-2.237151)*(1200-160),  # x坐标计算
+            80 + (1 - (lat - 48.84216)/(48.891342-48.84216))*(900-160)  # y坐标计算
+        )
+        # 执行绘制
+        self.drawing.draw_axes()
+        # 验证至少添加了10个刻度标签（根据间隔计算）
+        self.assertGreater(len(self.main_window.scene.addItem.call_args_list), 10)
+
 if __name__ == '__main__':
-    unittest.main() 
+    unittest.main()

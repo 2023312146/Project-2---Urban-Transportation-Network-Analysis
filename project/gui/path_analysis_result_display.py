@@ -45,7 +45,7 @@ class PathDisplay:
         if not self.main_window.all_paths:
             info_text += "No path found."
         else:
-            info_text += "All reachable paths:"
+            info_text += "<b>All reachable paths:</b><br>"  # 添加<b>标签实现加粗
         for idx, path_info in enumerate(self.main_window.all_paths):
             path = [str(station) for station in path_info['path']]
             path_names = []
@@ -78,3 +78,6 @@ class PathDisplay:
         
         self.main_window.path_info.setText(info_text)
         self.main_window.path_info.setTextFormat(Qt.RichText)
+        
+        # 重绘网络，确保显示路径
+        self.main_window.draw_network()

@@ -1,7 +1,7 @@
 import csv
 import os
-from project.data_structures.stop import ZoneType, Stop
-from project.data_structures.network import TransportNetwork
+from project.data_structures.stop_entity import ZoneType, Stop
+from project.data_structures.transport_network_structure import TransportNetwork
 
 class NetworkDataManager:
     def __init__(self, stops_csv_path=None, routes_csv_path=None):
@@ -93,33 +93,20 @@ class NetworkDataManager:
             raise Exception(f"加载路线数据时出错: {str(e)}")
     
     def _parse_zone_type(self, zone_type_str):
-        """
-        解析区域类型字符串为ZoneType枚举
-        
-        Args:
-            zone_type_str (str): 区域类型字符串
-            
-        Returns:
-            ZoneType: 对应的区域类型枚举值
-        """
         zone_type_map = {
-            "Residential": ZoneType.RESIDENTIAL,
-            "Commercial": ZoneType.COMMERCIAL,
-            "Industrial": ZoneType.INDUSTRIAL,
-            "Mixed": ZoneType.MIXED,
+            "RESIDENTIAL": ZoneType.RESIDENTIAL,
+            "COMMERCIAL": ZoneType.COMMERCIAL,
+            "INDUSTRIAL": ZoneType.INDUSTRIAL,
+            "MIXED": ZoneType.MIXED,
         }
         return zone_type_map.get(zone_type_str, ZoneType.MIXED)
 
     # 委托方法 - 所有操作都委托给TransportNetwork
     def add_station(self, name, x, y, station_type, wait_time=None):
         """添加站点 - 委托给TransportNetwork"""
-        if name in self.station_name_to_id:
-            raise ValueError(f"Station {name} already exists")
-        
         # 坐标转换
         lat, lon = self._convert_gui_to_geo_coords(x, y)
         zone_type = self._convert_string_to_zone_type(station_type)
-        
         new_id = str(max([int(id) for id in self.network.stops.keys()] + [0]) + 1)
         stop = Stop(
             stop_ID=new_id,
@@ -128,10 +115,11 @@ class NetworkDataManager:
             longitude=lon,
             zone_type=zone_type
         )
-        
-        # 委托给TransportNetwork
-        self.network.add_stop(stop)
-        self.station_name_to_id[name] = new_id
+        try:
+            self.network.add_stop(stop)
+            self.station_name_to_id[name] = new_id
+        except ValueError as e:
+            raise e
 
     def remove_station(self, name):
         """删除站点 - 委托给TransportNetwork"""
@@ -156,18 +144,14 @@ class NetworkDataManager:
         """添加连接 - 委托给TransportNetwork"""
         if from_name not in self.station_name_to_id or to_name not in self.station_name_to_id:
             raise ValueError("One or both stations do not exist")
-        
         from_id = self.station_name_to_id[from_name]
         to_id = self.station_name_to_id[to_name]
-        
-        from_stop = self.network.get_stop_by_id(from_id)
-        to_stop = self.network.get_stop_by_id(to_id)
-        
-        if not from_stop or not to_stop:
+        if from_id not in self.network.stops or to_id not in self.network.stops:
             raise ValueError("One or both stations not found in network")
-        
-        # 委托给TransportNetwork
-        self.network.add_route(from_stop, to_stop, distance)
+        try:
+            self.network.add_route(from_id, to_id, distance)
+        except ValueError as e:
+            raise e
 
     def remove_connection(self, from_name, to_name):
         """删除连接 - 委托给TransportNetwork"""
@@ -175,12 +159,9 @@ class NetworkDataManager:
             from_id = self.station_name_to_id[from_name]
             to_id = self.station_name_to_id[to_name]
             
-            from_stop = self.network.get_stop_by_id(from_id)
-            to_stop = self.network.get_stop_by_id(to_id)
-            
-            if from_stop and to_stop:
+            if from_id in self.network.stops and to_id in self.network.stops:
                 # 委托给TransportNetwork
-                self.network.remove_route(from_stop, to_stop)
+                self.network.remove_route(from_id, to_id)
 
     # 辅助方法 - 坐标和类型转换
     def _convert_gui_to_geo_coords(self, x, y):
@@ -244,12 +225,10 @@ class NetworkDataManager:
         stations = {}
         for stop in self.network.stops.values():
             x, y = self._convert_geo_to_gui_coords(stop.latitude, stop.longitude)
-            
             # 获取连接
             connections = []
-            if stop in self.network.adjacency_list:
-                connections = [neighbor.stop_ID for neighbor, _ in self.network.adjacency_list[stop]]
-            
+            if stop.stop_ID in self.network.adjacency_list:
+                connections = [neighbor_id for neighbor_id, _ in self.network.adjacency_list[stop.stop_ID]]
             stations[stop.stop_ID] = {
                 "id": stop.stop_ID,
                 "name": stop.name,
@@ -267,9 +246,9 @@ class NetworkDataManager:
     def distances(self):
         """获取所有距离数据 - 从TransportNetwork转换"""
         distances = {}
-        for stop in self.network.adjacency_list:
-            for neighbor, distance in self.network.adjacency_list[stop]:
-                distances[(stop.stop_ID, neighbor.stop_ID)] = distance
+        for stop_id in self.network.adjacency_list:
+            for neighbor_id, distance in self.network.adjacency_list[stop_id]:
+                distances[(stop_id, neighbor_id)] = distance
         return distances
 
     @property
@@ -289,3 +268,46 @@ class NetworkDataManager:
     def get_adjacency_list(self):
         """获取邻接表"""
         return self.network.adjacency_list.copy()
+
+    def save_data_to_csv(self, stops_csv_path=None, routes_csv_path=None):
+        """
+        将内存中的站点和路线数据写入CSV文件
+        """
+        # 设置默认保存路径（与加载路径一致）
+        if stops_csv_path is None:
+            stops_csv_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'urban_transport_network_stops.csv')
+        if routes_csv_path is None:
+            routes_csv_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'urban_transport_network_routes.csv')
+
+        try:
+            # 检查数据目录是否存在，不存在则创建
+            data_dir = os.path.dirname(stops_csv_path)
+            if not os.path.exists(data_dir):
+                os.makedirs(data_dir, exist_ok=True)
+
+            # 保存站点数据到CSV
+            with open(stops_csv_path, 'w', encoding='utf-8', newline='') as f:
+                writer = csv.DictWriter(f, fieldnames=['stop_id', 'name', 'latitude', 'longitude', 'zone_type'])
+                writer.writeheader()
+                for stop in self.get_all_stops():
+                    writer.writerow({
+                        'stop_id': stop.stop_ID,
+                        'name': stop.name,
+                        'latitude': stop.latitude,
+                        'longitude': stop.longitude,
+                        'zone_type': stop.zone_type.name  # 保存枚举名称（如"RESIDENTIAL"）
+                    })
+
+            # 保存路线数据到CSV
+            with open(routes_csv_path, 'w', encoding='utf-8', newline='') as f:
+                writer = csv.DictWriter(f, fieldnames=['start_stop_id', 'end_stop_id', 'distance'])
+                writer.writeheader()
+                for (start_id, end_id), distance in self.distances.items():
+                    writer.writerow({
+                        'start_stop_id': start_id,
+                        'end_stop_id': end_id,
+                        'distance': f"{distance:.2f}"  # 保留两位小数
+                    })
+
+        except Exception as e:
+            raise Exception(f"保存失败: {str(e)}")

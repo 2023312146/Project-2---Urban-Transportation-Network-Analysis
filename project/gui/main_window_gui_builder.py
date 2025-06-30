@@ -1,11 +1,12 @@
 from PyQt5.QtWidgets import (QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, QLabel, QScrollArea, QPushButton, QGraphicsScene)
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont, QPainter
-from project.gui.custom_view import CustomGraphicsView
-from project.gui.data_dialogs import DataDialogs
-from project.gui.drawing_module import DrawingModule
-from project.gui.interaction_handler import InteractionHandler
-from project.analysis.path_display import PathDisplay
+from project.gui.interactive_graphics_view import CustomGraphicsView
+from project.gui.stop_and_route_dialogs_gui import DataDialogs
+from project.gui.network_visualization_drawing import DrawingModule
+from project.gui.station_interaction_event_handler import InteractionHandler
+from project.gui.path_analysis_result_display import PathDisplay
+from PyQt5.QtWidgets import QMessageBox 
 
 class GUIBuilder(QMainWindow):
     def __init__(self, data_manager, path_analyzer):
@@ -24,7 +25,9 @@ class GUIBuilder(QMainWindow):
         self.path_display = PathDisplay(self)
         self.init_ui()
         self.draw_network = self.drawing_module.draw_network
-        self.draw_network()
+        
+        # 保存默认的站点点击处理函数
+        self.default_station_click_handler = self.handle_station_click
 
     def init_ui(self):
         self.setWindowTitle("Bus Network Path Planning System")
@@ -59,19 +62,23 @@ class GUIBuilder(QMainWindow):
         control_panel.setStyleSheet("background-color: white; border-radius: 4px; padding: 10px;")
         control_layout = QVBoxLayout(control_panel)
         control_layout.setAlignment(Qt.AlignTop)
-        control_layout.setSpacing(30)
+        control_layout.setSpacing(20)  # 减少面板间距
         control_layout.setContentsMargins(20, 20, 20, 20)
-        info_box = QWidget()
-        info_box.setStyleSheet("background-color: #f9f9f9; border-radius: 4px; padding: 10px;")
-        info_layout = QVBoxLayout(info_box)
-        self.info_label = QLabel("Hover over stations to view information, click to select start and end points")
-        self.info_label.setWordWrap(True)
-        self.info_label.setStyleSheet("font-size: 13px;")
-        info_layout.addWidget(self.info_label)
-        control_layout.addWidget(info_box)
+        
+        # 保留信息标签但隐藏起来（供其他功能使用）
+        self.info_label = QLabel("Click to select start and end points")
+        self.info_label.setVisible(False)
+        
+        # 路径信息面板 - 现在占据更多空间
         path_box = QWidget()
         path_box.setStyleSheet("background-color: #f9f9f9; border-radius: 4px; padding: 10px;")
         path_layout = QVBoxLayout(path_box)
+        
+        # 添加路径面板标题
+        path_title = QLabel("<b>Path Information</b>")
+        path_title.setStyleSheet("font-size: 16px;")
+        path_layout.addWidget(path_title)
+        
         self.path_info = QLabel("")
         self.path_info.setWordWrap(True)
         self.path_info.setStyleSheet("font-size: 13px;")
@@ -80,34 +87,81 @@ class GUIBuilder(QMainWindow):
         scroll_area.setWidgetResizable(True)
         scroll_area.setFrameShape(QScrollArea.NoFrame)
         scroll_area.setWidget(self.path_info)
-        scroll_area.setMinimumHeight(180)
-        scroll_area.setMaximumHeight(350)
+        scroll_area.setMinimumHeight(250)
+        scroll_area.setMaximumHeight(400) 
         path_layout.addWidget(scroll_area)
         control_layout.addWidget(path_box)
+        
+        # 按钮分组配置（类型化颜色编码）
+        BUTTON_GROUPS = [
+            {
+                "title": "Stop management",
+                "color": "#2196F3",  # 蓝色系（信息类操作）
+                "buttons": [
+                    ("Add Station", self.data_dialogs.add_station_dialog),
+                    ("Remove Station", self.data_dialogs.remove_station_dialog),
+                    ("Update Station Type", self.data_dialogs.update_station_type_dialog)
+                ]
+            },
+            {
+                "title": "Connection management",
+                "color": "#4CAF50",  # 绿色系（创建/修改类操作）
+                "buttons": [
+                    ("Add Connection", self.data_dialogs.add_connection_dialog),
+                    ("Remove Connection", self.data_dialogs.remove_connection_dialog)
+                ]
+            },
+            {
+                "title": "Analytical tools",
+                "color": "#009688",  # 青色系（数据分析类操作）
+                "buttons": [
+                    ("Find Highest Degree Station", self.data_dialogs.find_highest_degree_station_dialog)
+                ]
+            },
+            {
+                "title": "File Operations",
+                "color": "#9c27b0",  # 紫色系（文件操作）
+                "buttons": [
+                    ("Save Data", self.save_data),
+                    ("Clear Selection", self.clear_selection)  # 新增Clean按钮，关联清除逻辑
+                ]
+            }
+        ]
         button_box = QWidget()
         button_layout = QVBoxLayout(button_box)
-        button_layout.setSpacing(10)
-        station_btn_group = QWidget()
-        station_btn_layout = QVBoxLayout(station_btn_group)
-        station_btn_layout.setSpacing(8)
-        buttons = [
-            ("Clear Selection", self.clear_selection, "#f44336"),
-            ("Add Station", self.data_dialogs.add_station_dialog, "#2196F3"),
-            ("Remove Station", self.data_dialogs.remove_station_dialog, "#ff9800"),
-            ("Update Station Type", self.data_dialogs.update_station_type_dialog, "#9c27b0"),
-            ("Add Connection", self.data_dialogs.add_connection_dialog, "#4CAF50"),
-            ("Remove Connection", self.data_dialogs.remove_connection_dialog, "#607d8b"),
-            ("Find Highest Degree Station", self.data_dialogs.find_highest_degree_station_dialog, "#009688")
-        ]
-        for text, callback, color in buttons:
-            btn = QPushButton(text)
-            btn.setStyleSheet(f"""
-                QPushButton {{ background-color: {color}; color: white; text-align: left; padding-left: 15px; }}
-                QPushButton:hover {{ background-color: {self.darken_color(color)}; }}
-            """)
-            btn.clicked.connect(callback)
-            station_btn_layout.addWidget(btn)
-        button_layout.addWidget(station_btn_group)
+        button_layout.setSpacing(5)  # 增加组间间距
+        for group in BUTTON_GROUPS:
+            # 创建组标题
+            group_title = QLabel(f"<b>{group['title']}</b>")
+            group_title.setStyleSheet(f"color: {group['color']}; font-size: 16px;")
+            button_layout.addWidget(group_title)
+            
+            # 创建组内按钮容器
+            group_container = QWidget()
+            group_layout = QVBoxLayout(group_container)
+            group_layout.setSpacing(8)
+            
+            # 创建组内按钮
+            for text, callback in group["buttons"]:
+                btn = QPushButton(text)
+                base_color = group["color"]
+                btn.setStyleSheet(f"""
+                    QPushButton {{ 
+                        background-color: {base_color}; 
+                        color: white; 
+                        text-align: left; 
+                        padding-left: 15px; 
+                        border-radius: 4px;
+                        min-width: 120px;
+                        font-size: 14px;
+                        padding: 8px;
+                    }}
+                    QPushButton:hover {{ background-color: {self.darken_color(base_color)}; }}
+                """)
+                btn.clicked.connect(callback)
+                group_layout.addWidget(btn)
+            
+            button_layout.addWidget(group_container)
         control_layout.addWidget(button_box)
         main_layout.addWidget(control_panel, stretch=1)
         self.view = CustomGraphicsView(self)
@@ -162,12 +216,12 @@ class GUIBuilder(QMainWindow):
             delattr(self, 'efficiency_value')
         if hasattr(self, 'paths_are_same'):
             delattr(self, 'paths_are_same')
-        self.info_label.setText("Hover over stations to view information, click to select start and end points")
+        self.info_label.setText("Click to select start and end points")
         self.path_info.setText("")
         self.draw_network()
 
     def handle_station_hover(self, pos):
-        self.interaction_handler.handle_station_hover(pos)
+        return self.interaction_handler.handle_station_hover(pos)
 
     def handle_station_click(self, pos):
         self.interaction_handler.handle_station_click(pos)
@@ -184,3 +238,11 @@ class GUIBuilder(QMainWindow):
         x = self.width() - self.legend_label.width() - margin
         y = margin
         self.legend_label.move(x, y)
+
+    def save_data(self):
+        """保存当前数据到CSV文件"""
+        try:
+            self.data_manager.save_data_to_csv()  # 调用数据管理器的保存方法
+            QMessageBox.information(self, "Save Successful", "The data has been successfully saved to the default CSV file!")
+        except Exception as e:
+            QMessageBox.critical(self, "Save Failed", f"An error occurred while saving:{str(e)}")
