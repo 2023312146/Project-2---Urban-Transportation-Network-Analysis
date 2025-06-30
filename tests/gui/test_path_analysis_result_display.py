@@ -18,6 +18,8 @@ class MockMainWindow:
         self.all_paths = []
         self.best_path = []
         self.paths_are_same = False
+        # 添加draw_network的mock方法（关键修改）
+        self.draw_network = MagicMock()  # 模拟重绘网络方法
 
     def reset(self):
         self.selected_start = '1'
@@ -27,6 +29,8 @@ class MockMainWindow:
         self.show_only_best_path = False
         self.path_info = MagicMock()
         self.paths_are_same = False
+        # 重置时保持draw_network的mock状态
+        self.draw_network = MagicMock()
 
 class TestPathAnalysisResultDisplay(unittest.TestCase):
     def setUp(self):
@@ -163,5 +167,141 @@ class TestPathAnalysisResultDisplay(unittest.TestCase):
         text = self.main_window.path_info.setText.call_args[0][0]
         self.assertIn('FROM 1 TO 2', text)
 
+    def test_compare_result_missing_keys(self):
+        # 缺少部分key的compare_result
+        compare_result = {
+            'dijkstra_path': ['1', '2'],  # 存在path但缺少distance
+            'efficiency_path': ['1', '2'] # 存在path但缺少value和distance
+        }
+        self.main_window.path_analyzer.find_all_paths.return_value = [{'path': ['1', '2']}]
+        self.main_window.path_analyzer.find_best_path.return_value = ['1', '2']
+        self.main_window.path_analyzer.compare_best_paths.return_value = compare_result
+        
+        self.display.update_path_info()
+        text = self.main_window.path_info.setText.call_args[0][0]
+        
+        # 验证使用了默认值（0.0）
+        self.assertIn('distance: 0.00km', text)  # 来自dijkstra_distance的默认值
+        self.assertIn('efficiency: 0.00km/h', text)  # 来自efficiency_value的默认值
+        self.assertIn('Shortest Path', text)
+        self.assertIn('Most Efficient Path', text)
+
+    def test_all_paths_none(self):
+        self.main_window.path_analyzer.find_all_paths.return_value = []
+        self.main_window.path_analyzer.find_best_path.return_value = []
+        self.main_window.path_analyzer.compare_best_paths.return_value = None
+        self.display.update_path_info()
+        self.assertIn('No path found', self.main_window.path_info.setText.call_args[0][0])
+
+    def test_path_info_distance_efficiency_edge_cases(self):
+        all_paths = [
+            {'path': ['1', '2'], 'distance': 0.0, 'efficiency': 0.0},
+            {'path': ['1', '3', '2'], 'distance': -1.0, 'efficiency': -2.0},
+            {'path': ['1', '2'], 'distance': 1e10, 'efficiency': 1e10}
+        ]
+        compare_result = {
+            'dijkstra_path': ['1', '2'],
+            'dijkstra_distance': 0.0,
+            'efficiency_path': ['1', '3', '2'],
+            'efficiency_value': 0.0,
+            'efficiency_distance': -1.0,
+            'is_same': False
+        }
+        self.main_window.path_analyzer.find_all_paths.return_value = all_paths
+        self.main_window.path_analyzer.find_best_path.return_value = ['1', '2']
+        self.main_window.path_analyzer.compare_best_paths.return_value = compare_result
+        self.display.update_path_info()
+        text = self.main_window.path_info.setText.call_args[0][0]
+        self.assertIn('All reachable paths', text)
+
+    def test_selected_start_end_special(self):
+        self.main_window.selected_start = '@@'
+        self.main_window.selected_end = '##'
+        self.main_window.data_manager.stations = {}
+        self.main_window.path_analyzer.find_all_paths.return_value = []
+        self.main_window.path_analyzer.find_best_path.return_value = []
+        self.main_window.path_analyzer.compare_best_paths.return_value = None
+        self.display.update_path_info()
+        text = self.main_window.path_info.setText.call_args[0][0]
+        self.assertIn('FROM @@ TO ##', text)
+
+    def test_stations_empty(self):
+        self.main_window.data_manager.stations = {}
+        all_paths = [
+            {'path': ['1', '2'], 'distance': 1.0, 'efficiency': 2.0}
+        ]
+        compare_result = {
+            'dijkstra_path': ['1', '2'],
+            'dijkstra_distance': 1.0,
+            'efficiency_path': ['1', '2'],
+            'efficiency_value': 2.0,
+            'efficiency_distance': 1.0,
+            'is_same': True
+        }
+        self.main_window.path_analyzer.find_all_paths.return_value = all_paths
+        self.main_window.path_analyzer.find_best_path.return_value = ['1', '2']
+        self.main_window.path_analyzer.compare_best_paths.return_value = compare_result
+        self.display.update_path_info()
+        text = self.main_window.path_info.setText.call_args[0][0]
+        self.assertIn('FROM 1 TO 2', text)
+
+    def test_path_analyzer_raises_exception(self):
+        self.main_window.path_analyzer.find_all_paths.side_effect = Exception('数据库连接失败')
+        self.display.update_path_info()
+        
+        # 验证错误信息被正确设置
+        self.main_window.path_info.setText.assert_called_with("路径分析失败: 数据库连接失败")
+        try:
+            self.display.update_path_info()
+        except Exception as e:
+            self.assertEqual(str(e), 'fail')
+
+    def test_path_info_setText_raises_exception(self):
+        self.main_window.path_analyzer.find_all_paths.return_value = []
+        self.main_window.path_analyzer.find_best_path.return_value = []
+        self.main_window.path_analyzer.compare_best_paths.return_value = None
+        self.main_window.path_info.setText.side_effect = Exception('fail_setText')
+        with self.assertRaises(Exception) as cm:
+            self.display.update_path_info()
+        self.assertEqual(str(cm.exception), 'fail_setText')
+
+    def test_info_text_very_long(self):
+        all_paths = []
+        for i in range(100):
+            all_paths.append({'path': ['1', '2'], 'distance': 1.0, 'efficiency': 2.0})
+        compare_result = {
+            'dijkstra_path': ['1', '2'],
+            'dijkstra_distance': 1.0,
+            'efficiency_path': ['1', '2'],
+            'efficiency_value': 2.0,
+            'efficiency_distance': 1.0,
+            'is_same': True
+        }
+        self.main_window.path_analyzer.find_all_paths.return_value = all_paths
+        self.main_window.path_analyzer.find_best_path.return_value = ['1', '2']
+        self.main_window.path_analyzer.compare_best_paths.return_value = compare_result
+        self.display.update_path_info()
+        text = self.main_window.path_info.setText.call_args[0][0]
+        self.assertTrue(len(text) > 1000)
+
+    def test_path_with_duplicate_stations(self):
+        all_paths = [
+            {'path': ['1', '2', '1', '2'], 'distance': 2.0, 'efficiency': 2.0}
+        ]
+        compare_result = {
+            'dijkstra_path': ['1', '2', '1', '2'],
+            'dijkstra_distance': 2.0,
+            'efficiency_path': ['1', '2', '1', '2'],
+            'efficiency_value': 2.0,
+            'efficiency_distance': 2.0,
+            'is_same': True
+        }
+        self.main_window.path_analyzer.find_all_paths.return_value = all_paths
+        self.main_window.path_analyzer.find_best_path.return_value = ['1', '2', '1', '2']
+        self.main_window.path_analyzer.compare_best_paths.return_value = compare_result
+        self.display.update_path_info()
+        text = self.main_window.path_info.setText.call_args[0][0]
+        self.assertIn('A → B → A → B', text)
+
 if __name__ == '__main__':
-    unittest.main() 
+    unittest.main()

@@ -149,15 +149,23 @@ class CustomGraphicsView(QGraphicsView):
                     handler.add_station_mode = False
                     handler.remove_station_mode = False
                     self.setCursor(Qt.ArrowCursor)
-                
-            # 取消连接操作模式
+                    self.parent.info_label.setText("已退出站点编辑模式")
+            
+            # 取消连接操作模式（关键修改：显式重置属性）
             if hasattr(self.parent, 'data_dialogs'):
-                if hasattr(self.parent.data_dialogs, 'connection_mode') and self.parent.data_dialogs.connection_mode:
-                    # 使用取消方法来重置状态
-                    self.parent.data_dialogs.cancel_connection_mode()
+                data_dialogs = self.parent.data_dialogs
+                if hasattr(data_dialogs, 'connection_mode') and data_dialogs.connection_mode:
+                    # 调用取消方法（假设该方法可能未完全清理）
+                    if hasattr(data_dialogs, 'cancel_connection_mode'):
+                        data_dialogs.cancel_connection_mode()
                     
-                    # 状态清理完成后恢复光标
+                    # 显式重置状态属性
+                    data_dialogs.selected_from_station = None
+                    data_dialogs.connection_mode = None
+                    
+                    # 恢复光标
                     self.setCursor(Qt.ArrowCursor)
+                    self.parent.info_label.setText("已取消连接操作")
 
     def leaveEvent(self, event):
         """鼠标离开视图时隐藏标签"""

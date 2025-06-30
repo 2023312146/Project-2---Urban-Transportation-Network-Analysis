@@ -3,6 +3,7 @@ from unittest.mock import MagicMock, patch, ANY
 from project.gui.network_visualization_drawing import DrawingModule
 import math
 from PyQt5.QtGui import QColor
+from PyQt5.QtWidgets import QGraphicsScene
 
 class TestDrawingModule(unittest.TestCase):
     def setUp(self):
@@ -10,7 +11,12 @@ class TestDrawingModule(unittest.TestCase):
         self.mw.data_manager.stations = {}
         self.mw.data_manager.distances = {}
         self.mw.scene = MagicMock()
+        self.mw.scene.setSceneRect = MagicMock()
         self.mw.view = MagicMock()
+        self.mw.view.setScene = MagicMock()
+        self.mw.view.setRenderHint = MagicMock()
+        self.mw.view.setDragMode = MagicMock()
+        self.mw.view.setMouseTracking = MagicMock()
         self.mw.selected_start = None
         self.mw.selected_end = None
         self.mw.all_paths = []
@@ -19,17 +25,17 @@ class TestDrawingModule(unittest.TestCase):
         self.module = DrawingModule(self.mw)
 
     def test_init_scene(self):
-        self.mw.scene.setSceneRect = MagicMock()
-        self.mw.view.setScene = MagicMock()
-        self.mw.view.setRenderHint = MagicMock()
-        self.mw.view.setDragMode = MagicMock()
-        self.mw.view.setMouseTracking = MagicMock()
-        self.module.init_scene()
-        self.mw.scene.setSceneRect.assert_called()
-        self.mw.view.setScene.assert_called()
-        self.mw.view.setRenderHint.assert_any_call(ANY)
-        self.mw.view.setDragMode.assert_called()
-        self.mw.view.setMouseTracking.assert_called_with(True)
+        with patch.object(QGraphicsScene, 'setSceneRect') as mock_setSceneRect, \
+             patch.object(self.mw.view, 'setScene') as mock_setScene, \
+             patch.object(self.mw.view, 'setRenderHint') as mock_setRenderHint, \
+             patch.object(self.mw.view, 'setDragMode') as mock_setDragMode, \
+             patch.object(self.mw.view, 'setMouseTracking') as mock_setMouseTracking:
+            self.module.init_scene()
+            mock_setSceneRect.assert_called()
+            mock_setScene.assert_called()
+            mock_setRenderHint.assert_any_call(ANY)
+            mock_setDragMode.assert_called()
+            mock_setMouseTracking.assert_called_with(True)
 
     def test_draw_network_no_stations(self):
         self.mw.data_manager.stations = {}
@@ -146,6 +152,98 @@ class TestDrawingModule(unittest.TestCase):
         # mock _convert_geo_to_gui_coords
         self.mw.data_manager._convert_geo_to_gui_coords = MagicMock(return_value=(0, 0))
         self.mw.scene.sceneRect.return_value = MagicMock(left=lambda: 0, right=lambda: 100, top=lambda: 0, bottom=lambda: 100)
+        self.module.draw_axes()
+        self.mw.scene.addItem.assert_any_call(ANY)
+
+    def test_draw_network_station_type_unknown(self):
+        self.mw.data_manager.stations = {'1': {'x': 0, 'y': 0, 'name': 'A', 'type': 'Unknown'}}
+        self.mw.data_manager.distances = {}
+        self.mw.all_paths = []
+        self.mw.best_path = []
+        self.mw.show_only_best_path = False
+        with patch.object(self.module, 'draw_axes') as mock_axes, \
+             patch.object(self.module, 'draw_arrow') as mock_arrow:
+            self.module.draw_network()
+            mock_axes.assert_called()
+
+    def test_draw_network_selected_start_end_not_exist(self):
+        self.mw.data_manager.stations = {'1': {'x': 0, 'y': 0, 'name': 'A', 'type': 'Residential'}}
+        self.mw.data_manager.distances = {}
+        self.mw.all_paths = []
+        self.mw.best_path = []
+        self.mw.show_only_best_path = False
+        self.mw.selected_start = '999'
+        self.mw.selected_end = '888'
+        with patch.object(self.module, 'draw_axes') as mock_axes, \
+             patch.object(self.module, 'draw_arrow') as mock_arrow:
+            self.module.draw_network()
+            mock_axes.assert_called()
+
+    def test_draw_network_path_colors_empty(self):
+        self.mw.data_manager.stations = {'1': {'x': 0, 'y': 0, 'name': 'A', 'type': 'Residential'},
+                                         '2': {'x': 100, 'y': 100, 'name': 'B', 'type': 'Commercial'}}
+        self.mw.data_manager.distances = {('1', '2'): 1.0}
+        self.mw.all_paths = [['1', '2']]
+        self.mw.best_path = ['1', '2']
+        self.mw.show_only_best_path = False
+        self.mw.selected_start = '1'
+        self.mw.selected_end = '2'
+        self.mw.path_colors = [QColor(255,0,0)]
+        with patch.object(self.module, 'draw_axes') as mock_axes, \
+             patch.object(self.module, 'draw_arrow') as mock_arrow:
+            self.module.draw_network()
+            mock_axes.assert_called()
+            mock_arrow.assert_called()
+
+    def test_draw_network_station_name_edge_cases(self):
+        self.mw.data_manager.stations = {'1': {'x': 0, 'y': 0, 'name': '', 'type': 'Residential'},
+                                         '2': {'x': 100, 'y': 100, 'name': '很长很长很长很长很长很长很长很长很长很长很长很长很长很长很长很长很长很长很长很长', 'type': 'Commercial'},
+                                         '3': {'x': 200, 'y': 200, 'name': '@#￥%……&*', 'type': 'Industrial'}}
+        self.mw.data_manager.distances = {}
+        self.mw.all_paths = []
+        self.mw.best_path = []
+        self.mw.show_only_best_path = False
+        with patch.object(self.module, 'draw_axes') as mock_axes, \
+             patch.object(self.module, 'draw_arrow') as mock_arrow:
+            self.module.draw_network()
+            mock_axes.assert_called()
+
+    def test_draw_instruction_note_extreme_rect(self):
+        scene_rect = MagicMock(left=lambda: -1000, bottom=lambda: 10000)
+        self.mw.scene = MagicMock()
+        self.module.draw_instruction_note(scene_rect)
+        self.mw.scene.addItem.assert_any_call(ANY)
+
+    def test_draw_grid_zero_size(self):
+        self.mw.scene.sceneRect.return_value = MagicMock(left=lambda: 0, right=lambda: 0, top=lambda: 0, bottom=lambda: 0, height=lambda: 0, width=lambda: 0)
+        self.module.draw_grid()
+        self.mw.scene.addItem.assert_not_called()  # 不會畫任何線
+
+    def test_draw_arrow_zero_length(self):
+        line = MagicMock()
+        p1 = MagicMock(x=lambda: 0, y=lambda: 0)
+        p2 = MagicMock(x=lambda: 0, y=lambda: 0)
+        line.p1.return_value = p1
+        line.p2.return_value = p2
+        color = QColor(255, 0, 0)
+        self.mw.scene = MagicMock()
+        self.module.draw_arrow(line, color)
+        self.mw.scene.addItem.assert_any_call(ANY)
+
+    def test_draw_arrow_transparent_color(self):
+        line = MagicMock()
+        p1 = MagicMock(x=lambda: 0, y=lambda: 0)
+        p2 = MagicMock(x=lambda: 100, y=lambda: 0)
+        line.p1.return_value = p1
+        line.p2.return_value = p2
+        color = QColor(0, 0, 0, 0)  # 透明色
+        self.mw.scene = MagicMock()
+        self.module.draw_arrow(line, color)
+        self.mw.scene.addItem.assert_any_call(ANY)
+
+    def test_draw_axes_extreme_coords(self):
+        self.mw.data_manager._convert_geo_to_gui_coords = MagicMock(return_value=(-9999, 9999))
+        self.mw.scene.sceneRect.return_value = MagicMock(left=lambda: -1000, right=lambda: 1000, top=lambda: -1000, bottom=lambda: 1000)
         self.module.draw_axes()
         self.mw.scene.addItem.assert_any_call(ANY)
 

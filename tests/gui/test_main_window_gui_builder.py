@@ -36,8 +36,10 @@ class TestMainWindowGuiBuilder(unittest.TestCase):
         self.assertTrue(hasattr(self.gui, 'draw_network'))
 
     def test_clear_selection(self):
-        self.gui.selected_start = 'A'
-        self.gui.selected_end = 'B'
+        if hasattr(self.gui, 'selected_start'):
+            delattr(self.gui, 'selected_start')
+        if hasattr(self.gui, 'selected_end'):
+            delattr(self.gui, 'selected_end')
         self.gui.all_paths = [1]
         self.gui.best_path = [2]
         self.gui.show_only_best_path = True
@@ -83,6 +85,72 @@ class TestMainWindowGuiBuilder(unittest.TestCase):
         self.gui.legend_label.move.assert_called()
         self.gui.update_legend_position()
         self.gui.legend_label.move.assert_called()
+
+    def test_darken_color_various_cases(self):
+        gui = self.gui
+        # 黑色
+        self.assertEqual(gui.darken_color('#000000'), '#000000')
+        # 白色
+        self.assertEqual(gui.darken_color('#ffffff'), '#b2b2b2')
+        # 普通色
+        self.assertEqual(gui.darken_color('#123456'), '#0c243c')
+        # amount=1
+        self.assertEqual(gui.darken_color('#123456', 1), '#123456')
+        # amount=0
+        self.assertEqual(gui.darken_color('#123456', 0), '#000000')
+        # amount>1
+        self.assertEqual(gui.darken_color('#123456', 2), '#2468ac')
+        # amount<0
+        self.assertEqual(gui.darken_color('#123456', -1), '#000000')
+
+    def test_clear_selection_no_optional_attrs(self):
+        # 移除所有可選屬性
+        for attr in ['shortest_path','efficiency_path','shortest_distance','efficiency_distance','efficiency_value','paths_are_same']:
+            if hasattr(self.gui, attr):
+                delattr(self.gui, attr)
+        self.gui.info_label = MagicMock()
+        self.gui.path_info = MagicMock()
+        self.gui.draw_network = MagicMock()
+        self.gui.clear_selection()
+        self.gui.info_label.setText.assert_called()
+        self.gui.path_info.setText.assert_called()
+        self.gui.draw_network.assert_called()
+
+    def test_clear_selection_with_real_label(self):
+        from PyQt5.QtWidgets import QLabel
+        self.gui.info_label = QLabel()
+        self.gui.path_info = QLabel()
+        self.gui.draw_network = MagicMock()
+        self.gui.clear_selection()
+        self.assertEqual(self.gui.info_label.text(), "Click to select start and end points")
+        self.assertEqual(self.gui.path_info.text(), "")
+        self.gui.draw_network.assert_called()
+
+    def test_handle_station_hover_no_handler(self):
+        if hasattr(self.gui, 'interaction_handler'):
+            delattr(self.gui, 'interaction_handler')
+        pos = MagicMock()
+        with self.assertRaises(AttributeError):
+            self.gui.handle_station_hover(pos)
+
+    def test_handle_station_click_no_handler(self):
+        if hasattr(self.gui, 'interaction_handler'):
+            delattr(self.gui, 'interaction_handler')
+        pos = MagicMock()
+        with self.assertRaises(AttributeError):
+            self.gui.handle_station_click(pos)
+
+    def test_save_data_success(self):
+        self.gui.data_manager.save_data_to_csv = MagicMock()
+        with patch('project.gui.main_window_gui_builder.QMessageBox.information') as mock_info:
+            self.gui.save_data()
+            mock_info.assert_called()
+
+    def test_save_data_exception(self):
+        self.gui.data_manager.save_data_to_csv = MagicMock(side_effect=Exception("fail"))
+        with patch('project.gui.main_window_gui_builder.QMessageBox.critical') as mock_critical:
+            self.gui.save_data()
+            mock_critical.assert_called()
 
 if __name__ == '__main__':
     unittest.main() 

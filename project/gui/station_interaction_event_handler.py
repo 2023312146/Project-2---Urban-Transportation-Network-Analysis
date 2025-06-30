@@ -64,7 +64,6 @@ class InteractionHandler:
         
     def _get_station_tooltip(self, station_id):
         """获取站点的工具提示信息"""
-        # 确保station_id存在于stations字典中
         if station_id not in self.data_manager.stations:
             return None
             
@@ -76,6 +75,10 @@ class InteractionHandler:
         if stop_obj:
             lat = stop_obj.latitude
             lon = stop_obj.longitude
+        
+        # 修正：兼容数字和字符串类型的坐标格式化
+        lat_str = f"{lat:.6f}" if isinstance(lat, (int, float)) else lat
+        lon_str = f"{lon:.6f}" if isinstance(lon, (int, float)) else lon
         
         # 收集连接信息(仅用于工具提示，不再更新左上角面板)
         conn_info = []
@@ -111,7 +114,7 @@ class InteractionHandler:
         tooltip_info = (f"Stop: {station['name']}\n"
                         f"Type: {station['type']}\n"
                         f"Wait time: {station['wait_time']} minutes\n"
-                       f"Coordinates: ({lat:.6f}, {lon:.6f})\n\n"
+                       f"Coordinates: ({lat_str}, {lon_str})\n\n"
                        f"{connections_text}")
         return tooltip_info
 
