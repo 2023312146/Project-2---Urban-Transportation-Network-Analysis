@@ -15,8 +15,6 @@ if __name__ == "__main__":
     
     path_analyzer = PathAnalyzer(data_manager)
     window = GUIBuilder(data_manager, path_analyzer)
-    
-    # 确保所有内容在显示前已加载完成
     window.drawing_module.init_scene()
     window.drawing_module.draw_network()
     

@@ -41,17 +41,15 @@ class TestCustomGraphicsView(unittest.TestCase):
 
     def test_mouse_move_event_add_station(self):
         self.parent.interaction_handler.add_station_mode = True
-        # 明确设置 handle_station_hover 返回有效信息（非 None）
-        self.parent.handle_station_hover.return_value = "測試站點"  # 关键修改：确保返回非空
         event = QMouseEvent(QMouseEvent.Type.MouseMove, QPointF(10, 10), Qt.MouseButton.NoButton, Qt.MouseButton.NoButton, Qt.KeyboardModifier.NoModifier)
         with patch.object(self.view, 'mapToScene', return_value=QPointF(1, 1)), \
              patch('PyQt5.QtWidgets.QToolTip.showText') as mock_tip:
             self.view.mouseMoveEvent(event)
-            # 模拟定时器触发（实际由 hover_timer 自动触发）
-            self.view.process_hover()  # 手动触发后，状态应与定时器触发一致
-            # 验证光标形状
+            # 手動觸發 process_hover
+            self.view.current_hover_pos = QPointF(1, 1)
+            self.parent.handle_station_hover.return_value = "測試站點"
+            self.view.process_hover()
             self.assertEqual(self.view.cursor().shape(), Qt.CursorShape.CrossCursor)
-            # 验证工具提示被调用（因 handle_station_hover 返回非空）
             mock_tip.assert_called()
 
     def test_mouse_move_event_remove_station(self):
@@ -164,12 +162,12 @@ class TestCustomGraphicsView(unittest.TestCase):
     def test_key_press_event_no_data_dialogs(self):
         event = QKeyEvent(QKeyEvent.Type.KeyPress, Qt.Key.Key_Escape, Qt.KeyboardModifier.NoModifier)
         del self.parent.data_dialogs
-        self.view.keyPressEvent(event)  
+        self.view.keyPressEvent(event)  # 不應異常
 
     def test_key_press_event_data_dialogs_no_selected_from_station(self):
         event = QKeyEvent(QKeyEvent.Type.KeyPress, Qt.Key.Key_Escape, Qt.KeyboardModifier.NoModifier)
         self.parent.data_dialogs.selected_from_station = None
-        self.view.keyPressEvent(event)  
+        self.view.keyPressEvent(event)  # 不應異常
 
     def test_key_press_event_data_dialogs_with_original_click_handler(self):
         event = QKeyEvent(QKeyEvent.Type.KeyPress, Qt.Key.Key_Escape, Qt.KeyboardModifier.NoModifier)
@@ -193,4 +191,4 @@ class TestCustomGraphicsView(unittest.TestCase):
         self.assertFalse(self.view.hover_timer.isActive())
 
 if __name__ == '__main__':
-    unittest.main()
+    unittest.main() 

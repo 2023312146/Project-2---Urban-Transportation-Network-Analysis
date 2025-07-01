@@ -93,6 +93,16 @@ class NetworkDataManager:
             raise Exception(f"加载路线数据时出错: {str(e)}")
     
     def _parse_zone_type(self, zone_type_str):
+        """
+        解析区域类型字符串为ZoneType枚举
+        
+        Args:
+            zone_type_str (str): 区域类型字符串
+            
+        Returns:
+            ZoneType: 对应的区域类型枚举值
+        """
+        # 关键修改：将键改为全大写，与CSV文件中的zone_type值匹配
         zone_type_map = {
             "RESIDENTIAL": ZoneType.RESIDENTIAL,
             "COMMERCIAL": ZoneType.COMMERCIAL,

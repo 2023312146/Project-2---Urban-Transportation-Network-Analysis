@@ -140,6 +140,8 @@ class CustomGraphicsView(QGraphicsView):
     def keyPressEvent(self, event):
         """处理键盘事件，实现取消当前模式"""
         super().keyPressEvent(event)
+        
+        # ESC键取消当前模式
         if event.key() == Qt.Key_Escape:
             if hasattr(self.parent, 'interaction_handler'):
                 handler = self.parent.interaction_handler
@@ -149,23 +151,21 @@ class CustomGraphicsView(QGraphicsView):
                     handler.add_station_mode = False
                     handler.remove_station_mode = False
                     self.setCursor(Qt.ArrowCursor)
-                    self.parent.info_label.setText("已退出站点编辑模式")
-            
-            # 取消连接操作模式（关键修改：显式重置属性）
+                    self.parent.info_label.setText("操作已取消")
+                
+            # 取消连接操作模式
             if hasattr(self.parent, 'data_dialogs'):
                 data_dialogs = self.parent.data_dialogs
-                if hasattr(data_dialogs, 'connection_mode') and data_dialogs.connection_mode:
-                    # 调用取消方法（假设该方法可能未完全清理）
-                    if hasattr(data_dialogs, 'cancel_connection_mode'):
-                        data_dialogs.cancel_connection_mode()
-                    
-                    # 显式重置状态属性
+                if hasattr(data_dialogs, 'selected_from_station') and data_dialogs.selected_from_station is not None:
                     data_dialogs.selected_from_station = None
                     data_dialogs.connection_mode = None
                     
-                    # 恢复光标
+                    # 如果有临时点击处理函数，需要恢复
+                    if hasattr(data_dialogs, 'original_click_handler'):
+                        self.parent.handle_station_click = data_dialogs.original_click_handler
+                        
+                    self.parent.info_label.setText("连接操作已取消")
                     self.setCursor(Qt.ArrowCursor)
-                    self.parent.info_label.setText("已取消连接操作")
 
     def leaveEvent(self, event):
         """鼠标离开视图时隐藏标签"""

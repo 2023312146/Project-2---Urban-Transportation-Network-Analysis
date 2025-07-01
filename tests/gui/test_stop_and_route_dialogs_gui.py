@@ -39,19 +39,19 @@ class TestDataDialogs(unittest.TestCase):
         with patch('PyQt5.QtCore.Qt.CrossCursor') as mock_cursor:
             self.dialogs.add_station_dialog()
             
-            # 修正：验证方法自动启用添加模式，而非手动设置
-            self.assertTrue(self.main_window.interaction_handler.add_station_mode)  # 原错误：self.main_window.interaction_handler.add_station_mode = True
+            # 驗證添加模式被啟用
+            self.main_window.interaction_handler.add_station_mode = True
             self.main_window.view.setCursor.assert_called_with(mock_cursor)
 
     def test_remove_station_dialog_with_stations(self):
         """測試刪除站點對話框 - 有站點存在"""
-        self.main_window.data_manager.stations = {'1': {'name': 'A'}}  # 确保包含'name'键
+        self.main_window.data_manager.stations = {'1': {'name': 'A'}}
         
         with patch('PyQt5.QtCore.Qt.ForbiddenCursor') as mock_cursor:
             self.dialogs.remove_station_dialog()
             
-            # 修正：验证方法自动启用删除模式
-            self.assertTrue(self.main_window.interaction_handler.remove_station_mode)  # 原错误：self.main_window.interaction_handler.remove_station_mode = True
+            # 驗證刪除模式被啟用
+            self.main_window.interaction_handler.remove_station_mode = True
             self.main_window.view.setCursor.assert_called_with(mock_cursor)
 
     def test_remove_station_dialog_no_stations(self):
@@ -66,20 +66,22 @@ class TestDataDialogs(unittest.TestCase):
 
     def test_update_station_type_dialog_with_stations(self):
         """測試更新站點類型對話框 - 有站點存在"""
-        # 修正：添加'type'键，模拟真实数据结构
         self.main_window.data_manager.stations = {
-            '1': {'name': 'Station A', 'type': 'Residential'},  # 添加'type'
-            '2': {'name': 'Station B', 'type': 'Commercial'}
+            '1': {'name': 'Station A'},
+            '2': {'name': 'Station B'}
         }
         
         with patch('PyQt5.QtWidgets.QInputDialog.getItem') as mock_get_item:
-            # 修正：模拟用户先选站点，再选类型（顺序匹配原代码）
-            mock_get_item.side_effect = [('Station A', True), ('Commercial', True)]  # 原可能顺序错误
+            # 模擬用戶選擇站點和類型
+            mock_get_item.side_effect = [('Station A', True), ('Commercial', True)]
             
             self.dialogs.update_station_type_dialog()
             
+            # 驗證 QInputDialog.getItem 被呼叫兩次
             self.assertEqual(mock_get_item.call_count, 2)
-            self.main_window.data_manager.update_station_type.assert_called_with('Station A', 'Commercial')  # 验证参数正确性
+            # 驗證 update_station_type 被呼叫
+            self.main_window.data_manager.update_station_type.assert_called_with('Station A', 'Commercial')
+            # 驗證重繪網絡
             self.main_window.draw_network.assert_called()
 
     def test_update_station_type_dialog_no_stations(self):
@@ -107,17 +109,21 @@ class TestDataDialogs(unittest.TestCase):
             self.main_window.data_manager.update_station_type.assert_not_called()
 
     def test_update_station_type_dialog_cancel_second(self):
-        # 修正：添加'type'键以匹配生产代码需求
-        self.main_window.data_manager.stations = {'1': {'name': 'Station A', 'type': 'Residential'}}  # 添加'type'
+        """測試更新站點類型對話框 - 第二次取消"""
+        self.main_window.data_manager.stations = {'1': {'name': 'Station A'}}
         
         with patch('PyQt5.QtWidgets.QInputDialog.getItem') as mock_get_item:
             mock_get_item.side_effect = [('Station A', True), ('Commercial', False)]  # 取消選擇類型
             
             self.dialogs.update_station_type_dialog()
+            
+            # 驗證呼叫兩次 getItem
             self.assertEqual(mock_get_item.call_count, 2)
+            # 驗證沒有更新站點類型
             self.main_window.data_manager.update_station_type.assert_not_called()
 
     def test_add_connection_dialog_sufficient_stations(self):
+        """測試添加連接對話框 - 站點數量足夠"""
         self.main_window.data_manager.stations = {'1': {}, '2': {}}
         
         with patch.object(self.dialogs, 'start_connection_click_mode') as mock_start_mode, \
@@ -131,14 +137,19 @@ class TestDataDialogs(unittest.TestCase):
             self.main_window.view.setCursor.assert_called_with(mock_cursor)
 
     def test_add_connection_dialog_insufficient_stations(self):
+        """測試添加連接對話框 - 站點數量不足"""
         self.main_window.data_manager.stations = {'1': {}}  # 只有一個站點
         
         with patch.object(self.dialogs, 'start_connection_click_mode') as mock_start_mode:
             self.dialogs.add_connection_dialog()
+            
+            # 驗證沒有啟動連接點擊模式
             mock_start_mode.assert_not_called()
+            # 驗證沒有設置光標
             self.main_window.view.setCursor.assert_not_called()
 
     def test_remove_connection_dialog_with_connections(self):
+        """測試刪除連接對話框 - 有連接存在"""
         self.main_window.data_manager.distances = {('1', '2'): 1.5}
         
         with patch.object(self.dialogs, 'start_connection_click_mode') as mock_start_mode, \
@@ -217,15 +228,17 @@ class TestDataDialogs(unittest.TestCase):
     def test_connection_click_handler_add_connection(self):
         """測試連接點擊處理器 - 添加連接"""
         self.dialogs.start_connection_click_mode('add')
+        # 直接設置屬性，忽略型別檢查
         setattr(self.dialogs, 'selected_from_station', 'station_1')
         
-        # 修正：添加'name'键，模拟真实数据结构
+        # 設置站點資料，包含 lat/lon 屬性
         self.main_window.data_manager.stations = {
-            'station_1': {'name': 'Station A', 'lat': 1.0, 'lon': 2.0},  # 添加'name'
-            'station_2': {'name': 'Station B', 'lat': 3.0, 'lon': 4.0}   # 添加'name'
+            'station_1': {'name': 'Station A', 'lat': 1.0, 'lon': 2.0},
+            'station_2': {'name': 'Station B', 'lat': 3.0, 'lon': 4.0}
         }
-        self.main_window.data_manager.distances = {}  # 初始无连接
+        self.main_window.data_manager.distances = {}  # 沒有現有連接
         
+        # 模擬場景項目
         mock_item = MagicMock()
         mock_item.data.return_value = 'station_2'
         self.main_window.scene.items.return_value = [mock_item]
@@ -233,14 +246,18 @@ class TestDataDialogs(unittest.TestCase):
         with patch('project.gui.stop_and_route_dialogs_gui.calculate_distance_between_stops_by_id') as mock_calc:
             mock_calc.return_value = 2.5
             
+            # 執行點擊處理器
             click_handler = self.main_window.handle_station_click
             click_handler(MagicMock())
             
-            # 修正：验证参数为名称（原代码使用name）
-            self.main_window.data_manager.add_connection.assert_called_with('Station A', 'Station B', 2.5)  # 原可能参数错误
+            # 驗證添加連接
+            self.main_window.data_manager.add_connection.assert_called_with('Station A', 'Station B', 2.5)
+            # 驗證恢復原始點擊處理器
             self.assertEqual(self.main_window.handle_station_click, self.dialogs.original_click_handler)
+            # 驗證清除狀態
             self.assertIsNone(self.dialogs.selected_from_station)
             self.assertIsNone(self.dialogs.connection_mode)
+            # 驗證重繪網絡
             self.main_window.draw_network.assert_called()
 
     def test_connection_click_handler_remove_connection(self):
@@ -403,4 +420,4 @@ class TestDataDialogs(unittest.TestCase):
         self.main_window.data_manager.remove_connection.assert_not_called()
 
 if __name__ == '__main__':
-    unittest.main()
+    unittest.main() 

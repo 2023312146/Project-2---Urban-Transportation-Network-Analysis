@@ -8,5 +8,22 @@
     "test_*.py"
   ],
   "python.envFile": "${workspaceFolder}/.env",
-  "python.testing.pytestEnabled": false
+  "python.testing.pytestEnabled": false,
+  "coverage-gutters.coverageFileNames": [
+    "coverage.xml",
+    "lcov.info",
+    "cov.xml",
+    "coverage.cobertura.xml",
+    "jacoco.xml"
+  ],
+  "coverage-gutters.coverageDecorator": {
+    "type": "gutter",
+    "opacity": 0.8
+  },
+  "coverage-gutters.showLineCoverage": true,
+  "coverage-gutters.showRulerCoverage": true,
+  "coverage-gutters.highlightdark": "rgba(255,255,255,0.1)",
+  "coverage-gutters.mediumdark": "rgba(255,255,255,0.1)",
+  "coverage-gutters.lowdark": "rgba(255,255,255,0.1)",
+  "coverage-gutters.partialdark": "rgba(255,255,255,0.1)"
 }

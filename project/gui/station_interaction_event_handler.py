@@ -1,8 +1,7 @@
 from PyQt5.QtCore import QPointF, QRectF, Qt
 from PyQt5.QtWidgets import (QGraphicsEllipseItem, QInputDialog, QDialog, QVBoxLayout, 
-                          QLabel, QComboBox, QDialogButtonBox, QLineEdit, QMessageBox)
+                          QLabel, QComboBox, QDialogButtonBox, QLineEdit)
 from project.algorithms.distance_calculation import calculate_distance_between_stops_by_id
-import math
 
 class InteractionHandler:
     def __init__(self, main_window):
@@ -64,6 +63,7 @@ class InteractionHandler:
         
     def _get_station_tooltip(self, station_id):
         """获取站点的工具提示信息"""
+        # 确保station_id存在于stations字典中
         if station_id not in self.data_manager.stations:
             return None
             
@@ -75,10 +75,6 @@ class InteractionHandler:
         if stop_obj:
             lat = stop_obj.latitude
             lon = stop_obj.longitude
-        
-        # 修正：兼容数字和字符串类型的坐标格式化
-        lat_str = f"{lat:.6f}" if isinstance(lat, (int, float)) else lat
-        lon_str = f"{lon:.6f}" if isinstance(lon, (int, float)) else lon
         
         # 收集连接信息(仅用于工具提示，不再更新左上角面板)
         conn_info = []
@@ -110,11 +106,16 @@ class InteractionHandler:
             connections_text += "Incoming Connections:\n"
             connections_text += " • " + "\n • ".join(incoming_connections)
         
+        # 格式化坐标，处理未知情况
+        coord_text = f"({lat}, {lon})"
+        if isinstance(lat, (int, float)) and isinstance(lon, (int, float)):
+            coord_text = f"({lat:.6f}, {lon:.6f})"
+
         # 返回悬停提示信息，添加连接信息
         tooltip_info = (f"Stop: {station['name']}\n"
                         f"Type: {station['type']}\n"
                         f"Wait time: {station['wait_time']} minutes\n"
-                       f"Coordinates: ({lat_str}, {lon_str})\n\n"
+                       f"Coordinates: {coord_text}\n\n"
                        f"{connections_text}")
         return tooltip_info
 
@@ -151,84 +152,76 @@ class InteractionHandler:
                     break
                     
     def add_station_at_position(self, pos: QPointF):
-        """在指定位置添加新站点"""
-        # 将场景坐标转换为GUI坐标
+        print('進入 add_station_at_position')
+        print('data_manager id (主程式):', id(self.data_manager))
+        # 將場景坐標轉換為GUI坐標
         x, y = pos.x(), pos.y()
         
-        
-        proximity_threshold = 30 
-        for station_data in self.data_manager.stations.values():
-            station_x = station_data["x"]
-            station_y = station_data["y"]
-            distance = math.sqrt((x - station_x)**2 + (y - station_y)**2)
-            if distance < proximity_threshold:
-                msg = QMessageBox()
-                msg.setIcon(QMessageBox.Warning)
-                msg.setWindowTitle("警告")
-                msg.setText("此处已有点")
-                msg.setStandardButtons(QMessageBox.Ok)
-                msg.exec_()
-                
-                # 退出添加模式
-                self.add_station_mode = False
-                
-                # 恢复正常鼠标
-                self.main_window.view.setCursor(Qt.ArrowCursor)
-                return
-        
-        # 打开名称输入对话框
+        # 打開名稱輸入對話框
         dialog = QDialog(self.main_window)
         dialog.setWindowTitle("Add New Station")
         dialog.setMinimumWidth(300)
         
-        # 创建布局
+        # 創建佈局
         layout = QVBoxLayout(dialog)
         
-        # 添加名称输入
+        # 添加名稱輸入
         layout.addWidget(QLabel("Station Name:"))
         default_name = f"Station_{len(self.data_manager.stations) + 1}"
         name_edit = QLineEdit(default_name)
         layout.addWidget(name_edit)
         
-        # 添加站点类型选择（保留）
+        # 添加站點類型選擇（保留）
         layout.addWidget(QLabel("Zone Type:"))
         type_combo = QComboBox()
         type_combo.addItems(["Residential", "Commercial", "Industrial", "Mixed"])
-        type_combo.setCurrentText("Residential")  # 默认选择Residential
+        type_combo.setCurrentText("Residential")  # 默認選擇Residential
         layout.addWidget(type_combo)
         
-        # 移除原有的等待时间输入控件（关键修改点）
+        # 移除原有的等待時間輸入控件（關鍵修改點）
         
-        # 添加按钮
+        # 添加按鈕
         button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         button_box.accepted.connect(dialog.accept)
         button_box.rejected.connect(dialog.reject)
         layout.addWidget(button_box)
         
-        # 显示对话框并等待结果
+        # 顯示對話框並等待結果
         result = dialog.exec_()
+        print('dialog.exec_() 回傳:', result)
         if result == QDialog.Accepted:
+            print('Dialog accepted')
             station_name = name_edit.text()
+            print('station_name:', station_name)
             if not station_name:
-                station_name = default_name  # 如果没有输入名称，使用默认名称
-                
+                station_name = default_name  # 如果沒有輸入名稱，使用默認名稱
+                print('使用默認名稱:', station_name)
+            
             station_type = type_combo.currentText()
+            print('station_type:', station_type)
             
-            # 自动根据区域类型获取等待时间（通过NetworkDataManager的内部映射）
+            # 自動根據區域類型獲取等待時間（通過NetworkDataManager的內部映射）
             zone_type = self.data_manager._convert_string_to_zone_type(station_type)
+            print('zone_type:', zone_type)
             wait_time = self.data_manager._get_wait_time(zone_type)
+            print('wait_time:', wait_time)
             
-            # 创建新站点（不再需要手动传递wait_time，由zone_type自动确定）
+            # 創建新站點（不再需要手動傳遞wait_time，由zone_type自動確定）
+            print('準備呼叫 add_station')
+            print('data_manager id (呼叫前):', id(self.data_manager))
             self.data_manager.add_station(station_name, x, y, station_type)
+            print('add_station 已呼叫')
+        else:
+            print('Dialog not accepted')
         
         # 退出添加模式
         self.add_station_mode = False
         
-        # 重绘网络
+        # 重繪網絡
         self.main_window.draw_network()
         
-        # 恢复正常鼠标
-        self.main_window.view.setCursor(Qt.ArrowCursor)
+        # 恢復正常鼠標
+        self.main_window.view.setCursor(Qt.CursorShape.ArrowCursor)
         
     def remove_station_at_position(self, pos: QPointF):
         """删除指定位置的站点"""

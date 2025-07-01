@@ -6,7 +6,7 @@ from project.gui.stop_and_route_dialogs_gui import DataDialogs
 from project.gui.network_visualization_drawing import DrawingModule
 from project.gui.station_interaction_event_handler import InteractionHandler
 from project.gui.path_analysis_result_display import PathDisplay
-from PyQt5.QtWidgets import QMessageBox 
+from PyQt5.QtWidgets import QMessageBox  # 新增导入
 
 class GUIBuilder(QMainWindow):
     def __init__(self, data_manager, path_analyzer):
@@ -25,9 +25,6 @@ class GUIBuilder(QMainWindow):
         self.path_display = PathDisplay(self)
         self.init_ui()
         self.draw_network = self.drawing_module.draw_network
-        
-        # 保存默认的站点点击处理函数
-        self.default_station_click_handler = self.handle_station_click
 
     def init_ui(self):
         self.setWindowTitle("Bus Network Path Planning System")
@@ -87,8 +84,8 @@ class GUIBuilder(QMainWindow):
         scroll_area.setWidgetResizable(True)
         scroll_area.setFrameShape(QScrollArea.NoFrame)
         scroll_area.setWidget(self.path_info)
-        scroll_area.setMinimumHeight(250)
-        scroll_area.setMaximumHeight(400) 
+        scroll_area.setMinimumHeight(250)  # 增加高度
+        scroll_area.setMaximumHeight(400)  # 增加最大高度
         path_layout.addWidget(scroll_area)
         control_layout.addWidget(path_box)
         

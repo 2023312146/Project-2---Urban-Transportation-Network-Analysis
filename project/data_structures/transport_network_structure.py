@@ -3,8 +3,11 @@ import csv
 
 class TransportNetwork:
     def __init__(self):
+        # 邻接表：key为stop_ID，value为[(neighbor_stop_ID, distance), ...]
         self.adjacency_list = {} 
+        # id到Stop对象的映射
         self.stops = {} 
+        # 反向邻接表：key为stop_ID，value为[(from_stop_ID, distance), ...]
         self.reverse_adjacency = {}
     
     def add_stop(self, stop):
