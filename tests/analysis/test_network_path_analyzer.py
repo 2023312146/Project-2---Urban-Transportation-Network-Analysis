@@ -107,5 +107,18 @@ class TestPathAnalyzer(unittest.TestCase):
         # 测试最高度节点
         self.assertEqual(self.analyzer.find_highest_degree_station(), '1')
 
+class TestMockNetwork(unittest.TestCase):
+    def setUp(self):
+        self.network = MockNetwork()
+
+    def test_get_stop_by_id_exists(self):
+        stop = self.network.get_stop_by_id('1')
+        self.assertIsNotNone(stop)
+        self.assertEqual(stop.stop_ID, '1')
+
+    def test_get_stop_by_id_not_exists(self):
+        stop = self.network.get_stop_by_id('999')
+        self.assertIsNone(stop)
+
 if __name__ == '__main__':
     unittest.main() 

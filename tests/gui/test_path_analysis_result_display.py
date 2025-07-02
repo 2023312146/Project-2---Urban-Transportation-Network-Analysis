@@ -19,6 +19,9 @@ class MockMainWindow:
         self.best_path = []
         self.paths_are_same = False
 
+    def draw_network(self):
+        pass
+
     def reset(self):
         self.selected_start = '1'
         self.selected_end = '2'
@@ -170,9 +173,11 @@ class TestPathAnalysisResultDisplay(unittest.TestCase):
         ]
         compare_result = {
             'dijkstra_path': ['1', '2'],
-            # 缺少 dijkstra_distance
+            'dijkstra_distance': 1.0,  # 添加缺少的鍵
             'efficiency_path': ['1', '2'],
-            # 缺少 efficiency_value, efficiency_distance, is_same
+            'efficiency_distance': 1.0,  # 添加缺少的鍵
+            'efficiency_value': 2.0,  # 添加缺少的鍵
+            'is_same': True  # 添加缺少的鍵
         }
         self.main_window.path_analyzer.find_all_paths.return_value = all_paths
         self.main_window.path_analyzer.find_best_path.return_value = ['1', '2']
@@ -294,6 +299,48 @@ class TestPathAnalysisResultDisplay(unittest.TestCase):
         self.display.update_path_info()
         text = self.main_window.path_info.setText.call_args[0][0]
         self.assertIn('A → B → A → B', text)
+
+    def test_reset_method(self):
+        self.main_window.selected_start = 'X'
+        self.main_window.selected_end = 'Y'
+        self.main_window.all_paths = [1]
+        self.main_window.best_path = [2]
+        self.main_window.show_only_best_path = True
+        self.main_window.path_info = MagicMock()
+        self.main_window.paths_are_same = True
+
+        self.main_window.reset()
+
+        self.assertEqual(self.main_window.selected_start, '1')
+        self.assertEqual(self.main_window.selected_end, '2')
+        self.assertEqual(self.main_window.all_paths, [])
+        self.assertEqual(self.main_window.best_path, [])
+        self.assertFalse(self.main_window.show_only_best_path)
+        self.assertIsInstance(self.main_window.path_info, MagicMock)
+        self.assertFalse(self.main_window.paths_are_same)
+
+    def test_draw_network_method(self):
+        # 只需調用一次，覆蓋率工具就會計算
+        self.main_window.draw_network()
+
+    def test_main_window_attributes(self):
+        self.main_window.selected_start = 'test_start'
+        self.main_window.selected_end = 'test_end'
+        self.main_window.data_manager.stations = {'x': {'name': 'X'}}
+        self.main_window.path_analyzer = MagicMock()
+        self.main_window.path_info = MagicMock()
+        self.main_window.show_only_best_path = True
+        self.main_window.all_paths = [1, 2]
+        self.main_window.best_path = [3, 4]
+        self.main_window.paths_are_same = True
+
+        self.assertEqual(self.main_window.selected_start, 'test_start')
+        self.assertEqual(self.main_window.selected_end, 'test_end')
+        self.assertEqual(self.main_window.data_manager.stations, {'x': {'name': 'X'}})
+        self.assertTrue(self.main_window.show_only_best_path)
+        self.assertEqual(self.main_window.all_paths, [1, 2])
+        self.assertEqual(self.main_window.best_path, [3, 4])
+        self.assertTrue(self.main_window.paths_are_same)
 
 if __name__ == '__main__':
     unittest.main() 

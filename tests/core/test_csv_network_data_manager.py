@@ -83,9 +83,10 @@ class TestCSVNetworkDataManager(unittest.TestCase):
     def test_update_station_type(self):
         self.manager.station_name_to_id['Test'] = '1'
         stop = Stop(stop_ID='1', name='Test', latitude=0, longitude=0, zone_type=ZoneType.RESIDENTIAL)
-        self.manager.network.get_stop_by_id = lambda sid: stop
-        with patch.object(self.manager, '_convert_string_to_zone_type', return_value=ZoneType.COMMERCIAL):
-            self.manager.update_station_type('Test', 'Commercial')
+        # 重置side_effect並設置return_value
+        self.mock_network.get_stop_by_id.side_effect = None
+        self.mock_network.get_stop_by_id.return_value = stop
+        self.manager.update_station_type('Test', 'Commercial')
         self.assertEqual(stop.zone_type, ZoneType.COMMERCIAL)
 
     def test_add_connection(self):
@@ -164,6 +165,125 @@ class TestCSVNetworkDataManager(unittest.TestCase):
     def test_get_wait_time(self):
         self.assertEqual(self.manager._get_wait_time(ZoneType.RESIDENTIAL), 2)
         self.assertEqual(self.manager._get_wait_time(ZoneType.MIXED), 3)
+
+    def test_load_routes_with_missing_stops(self):
+        """測試當路線中的站點不存在時的警告輸出"""
+        routes_content = 'start_stop_id,end_stop_id,distance\n1,999,1.0\n999,2,1.0\n'
+        # 重置side_effect並設置return_value為None來模擬站點不存在
+        self.mock_network.get_stop_by_id.side_effect = None
+        self.mock_network.get_stop_by_id.return_value = None
+        with patch('builtins.open', mock_open(read_data=routes_content)):
+            with patch('builtins.print') as mock_print:
+                # 應該不會拋出異常，只會打印警告
+                self.manager._load_routes_from_csv('test_routes.csv')
+                # 驗證警告被打印
+                mock_print.assert_called()
+
+    def test_load_routes_file_not_found_exception(self):
+        """測試路線文件未找到時的異常處理"""
+        with patch('builtins.open', side_effect=FileNotFoundError):
+            with self.assertRaises(FileNotFoundError):
+                self.manager._load_routes_from_csv('not_exist.csv')
+
+    def test_load_routes_general_exception(self):
+        """測試路線文件讀取時的一般異常處理"""
+        with patch('builtins.open', side_effect=Exception("讀取錯誤")):
+            with self.assertRaises(Exception):
+                self.manager._load_routes_from_csv('error.csv')
+
+    def test_add_station_value_error(self):
+        """測試添加站點時的ValueError異常"""
+        self.mock_network.add_stop.side_effect = ValueError("站點已存在")
+        with self.assertRaises(ValueError):
+            self.manager.add_station('Test', 10, 20, 'Residential')
+
+    def test_remove_station_deletes_mapping(self):
+        """測試刪除站點時會刪除名稱到ID的映射"""
+        self.manager.station_name_to_id['Test'] = '1'
+        stop = Stop(stop_ID='1', name='Test', latitude=0, longitude=0, zone_type=ZoneType.RESIDENTIAL)
+        self.mock_network.get_stop_by_id.return_value = stop
+        self.manager.remove_station('Test')
+        self.assertNotIn('Test', self.manager.station_name_to_id)
+
+    def test_update_station_type_not_in_mapping(self):
+        """測試更新不存在的站點類型"""
+        # 不應該拋出異常
+        self.manager.update_station_type('NotExist', 'Commercial')
+
+    def test_update_station_type_stop_not_found(self):
+        """測試更新站點類型但站點在網絡中不存在"""
+        self.manager.station_name_to_id['Test'] = '1'
+        self.mock_network.get_stop_by_id.return_value = None
+        # 不應該拋出異常
+        self.manager.update_station_type('Test', 'Commercial')
+
+    def test_save_data_to_csv_success(self):
+        """測試成功保存數據到CSV文件"""
+        # 設置一些測試數據
+        stop1 = Stop(stop_ID='1', name='A', latitude=0, longitude=0, zone_type=ZoneType.RESIDENTIAL)
+        stop2 = Stop(stop_ID='2', name='B', latitude=1, longitude=1, zone_type=ZoneType.COMMERCIAL)
+        self.mock_network.stops = {'1': stop1, '2': stop2}
+        self.mock_network.adjacency_list = {'1': [('2', 1.5)]}
+        
+        mock_file = mock_open()
+        with patch('builtins.open', mock_file):
+            with patch('os.path.exists', return_value=True):
+                with patch('os.makedirs'):
+                    self.manager.save_data_to_csv('test_stops.csv', 'test_routes.csv')
+        
+        # 驗證文件被正確打開
+        self.assertTrue(mock_file.called)
+
+    def test_save_data_to_csv_create_directory(self):
+        """測試保存時創建目錄"""
+        stop1 = Stop(stop_ID='1', name='A', latitude=0, longitude=0, zone_type=ZoneType.RESIDENTIAL)
+        self.mock_network.stops = {'1': stop1}
+        self.mock_network.adjacency_list = {}
+        
+        mock_file = mock_open()
+        with patch('builtins.open', mock_file):
+            with patch('os.path.exists', return_value=False):
+                with patch('os.makedirs') as mock_makedirs:
+                    self.manager.save_data_to_csv('test_stops.csv', 'test_routes.csv')
+        
+        # 驗證目錄創建被調用
+        mock_makedirs.assert_called()
+
+    def test_save_data_to_csv_exception(self):
+        """測試保存數據時的異常處理"""
+        with patch('builtins.open', side_effect=Exception("寫入錯誤")):
+            with self.assertRaises(Exception):
+                self.manager.save_data_to_csv('test_stops.csv', 'test_routes.csv')
+
+    def test_parse_zone_type(self):
+        """測試解析區域類型"""
+        self.assertEqual(self.manager._parse_zone_type("RESIDENTIAL"), ZoneType.RESIDENTIAL)
+        self.assertEqual(self.manager._parse_zone_type("COMMERCIAL"), ZoneType.COMMERCIAL)
+        self.assertEqual(self.manager._parse_zone_type("INDUSTRIAL"), ZoneType.INDUSTRIAL)
+        self.assertEqual(self.manager._parse_zone_type("MIXED"), ZoneType.MIXED)
+        self.assertEqual(self.manager._parse_zone_type("UNKNOWN"), ZoneType.MIXED)
+
+    def test_convert_string_to_zone_type_all_types(self):
+        """測試所有區域類型的轉換"""
+        self.assertEqual(self.manager._convert_string_to_zone_type('Residential'), ZoneType.RESIDENTIAL)
+        self.assertEqual(self.manager._convert_string_to_zone_type('Commercial'), ZoneType.COMMERCIAL)
+        self.assertEqual(self.manager._convert_string_to_zone_type('Industrial'), ZoneType.INDUSTRIAL)
+        self.assertEqual(self.manager._convert_string_to_zone_type('Mixed'), ZoneType.MIXED)
+
+    def test_get_wait_time_all_types(self):
+        """測試所有區域類型的等待時間"""
+        self.assertEqual(self.manager._get_wait_time(ZoneType.RESIDENTIAL), 2)
+        self.assertEqual(self.manager._get_wait_time(ZoneType.COMMERCIAL), 4)
+        self.assertEqual(self.manager._get_wait_time(ZoneType.INDUSTRIAL), 3)
+        self.assertEqual(self.manager._get_wait_time(ZoneType.MIXED), 3)
+
+    def test_add_connection_value_error(self):
+        """測試添加連接時的ValueError異常"""
+        self.manager.station_name_to_id = {'A': '1', 'B': '2'}
+        self.mock_network.stops = {'1': MagicMock(), '2': MagicMock()}
+        self.mock_network.add_route.side_effect = ValueError("連接已存在")
+        with self.assertRaises(ValueError):
+            self.manager.add_connection('A', 'B', 5.0)
 
 if __name__ == '__main__':
     unittest.main() 

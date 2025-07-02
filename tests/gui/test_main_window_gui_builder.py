@@ -152,5 +152,183 @@ class TestMainWindowGuiBuilder(unittest.TestCase):
             self.gui.save_data()
             mock_critical.assert_called()
 
+    def test_on_traffic_period_changed_with_selection(self):
+        """測試交通時段改變時有起終點選擇的情況"""
+        self.gui.selected_start = MagicMock()
+        self.gui.selected_end = MagicMock()
+        self.gui.update_path_info = MagicMock()
+        self.gui.draw_network = MagicMock()
+        
+        self.gui.on_traffic_period_changed("Morning rush hour")
+        
+        self.gui.update_path_info.assert_called_once()
+        self.gui.draw_network.assert_called_once()
+
+    def test_on_traffic_period_changed_without_selection(self):
+        """測試交通時段改變時沒有起終點選擇的情況"""
+        self.gui.selected_start = None
+        self.gui.selected_end = None
+        self.gui.update_path_info = MagicMock()
+        self.gui.draw_network = MagicMock()
+        
+        self.gui.on_traffic_period_changed("Evening rush hour")
+        
+        self.gui.update_path_info.assert_not_called()
+        self.gui.draw_network.assert_called_once()
+
+    def test_show_stop_utilization_analysis(self):
+        """測試顯示站點利用率分析"""
+        with patch('project.gui.main_window_gui_builder.StopUtilizationAnalyzer') as mock_analyzer_class:
+            with patch('project.gui.main_window_gui_builder.StopUtilizationDisplay') as mock_dialog_class:
+                mock_analyzer = MagicMock()
+                mock_analyzer_class.return_value = mock_analyzer
+                mock_dialog = MagicMock()
+                mock_dialog_class.return_value = mock_dialog
+                
+                self.gui.show_stop_utilization_analysis()
+                
+                mock_analyzer_class.assert_called_once_with(self.gui.data_manager)
+                mock_analyzer.generate_random_data.assert_called_once()
+                mock_dialog_class.assert_called_once_with(mock_analyzer, self.gui)
+                mock_dialog.remove_stop_signal.connect.assert_called_once_with(self.gui.remove_stop_by_id)
+                mock_dialog.add_stop_signal.connect.assert_called_once_with(self.gui.add_stop_at_location)
+                mock_dialog.exec_.assert_called_once()
+
+    def test_remove_stop_by_id_success(self):
+        """測試成功刪除站點"""
+        mock_stop = MagicMock()
+        mock_stop.name = "Test Stop"
+        self.gui.data_manager.network.get_stop_by_id.return_value = mock_stop
+        self.gui.data_manager.remove_station = MagicMock()
+        self.gui.draw_network = MagicMock()
+        
+        self.gui.remove_stop_by_id("1")
+        
+        self.gui.data_manager.network.get_stop_by_id.assert_called_once_with("1")
+        self.gui.data_manager.remove_station.assert_called_once_with("Test Stop")
+        self.gui.draw_network.assert_called_once()
+
+    def test_remove_stop_by_id_not_found(self):
+        """測試刪除不存在的站點"""
+        self.gui.data_manager.network.get_stop_by_id.return_value = None
+        self.gui.data_manager.remove_station = MagicMock()
+        self.gui.draw_network = MagicMock()
+        
+        self.gui.remove_stop_by_id("999")
+        
+        self.gui.data_manager.remove_station.assert_not_called()
+        self.gui.draw_network.assert_not_called()
+
+    def test_remove_stop_by_id_exception(self):
+        """測試刪除站點時發生異常"""
+        mock_stop = MagicMock()
+        mock_stop.name = "Test Stop"
+        self.gui.data_manager.network.get_stop_by_id.return_value = mock_stop
+        self.gui.data_manager.remove_station = MagicMock(side_effect=Exception("Delete failed"))
+        
+        with patch('project.gui.main_window_gui_builder.QMessageBox.warning') as mock_warning:
+            self.gui.remove_stop_by_id("1")
+            mock_warning.assert_called_once()
+
+    def test_add_stop_at_location_success(self):
+        """測試成功添加站點"""
+        with patch('project.gui.main_window_gui_builder.CoordinateUtils') as mock_coord_utils:
+            mock_coord_utils.calculate_haversine_distance.return_value = 1.5
+            
+            self.gui.data_manager._convert_geo_to_gui_coords.return_value = (100, 200)
+            self.gui.data_manager.add_station = MagicMock()
+            self.gui.data_manager.station_name_to_id = {"Existing Stop": "1"}
+            self.gui.data_manager.add_connection = MagicMock()
+            self.gui.drawing_module.init_scene = MagicMock()
+            self.gui.draw_network = MagicMock()
+            
+            # 模擬連接站點
+            mock_connect_stop = MagicMock()
+            mock_connect_stop.latitude = 30.1
+            mock_connect_stop.longitude = 120.1
+            self.gui.data_manager.network.get_stop_by_id.return_value = mock_connect_stop
+            
+            self.gui.add_stop_at_location(30.0, 120.0, "New Stop", ["Existing Stop"])
+            
+            self.gui.data_manager._convert_geo_to_gui_coords.assert_called_once_with(30.0, 120.0)
+            self.gui.data_manager.add_station.assert_called_once_with("New Stop", 100, 200, "Mixed")
+            self.gui.data_manager.add_connection.assert_called()
+            self.gui.drawing_module.init_scene.assert_called_once()
+            self.gui.draw_network.assert_called_once()
+
+    def test_add_stop_at_location_no_connections(self):
+        """測試添加站點但不連接其他站點"""
+        self.gui.data_manager._convert_geo_to_gui_coords.return_value = (100, 200)
+        self.gui.data_manager.add_station = MagicMock()
+        self.gui.drawing_module.init_scene = MagicMock()
+        self.gui.draw_network = MagicMock()
+        
+        self.gui.add_stop_at_location(30.0, 120.0, "New Stop")
+        
+        self.gui.data_manager.add_station.assert_called_once_with("New Stop", 100, 200, "Mixed")
+        self.gui.drawing_module.init_scene.assert_called_once()
+        self.gui.draw_network.assert_called_once()
+
+    def test_add_stop_at_location_connection_error(self):
+        """測試添加站點時連接錯誤"""
+        with patch('project.gui.main_window_gui_builder.CoordinateUtils') as mock_coord_utils:
+            mock_coord_utils.calculate_haversine_distance.return_value = 1.5
+            
+            self.gui.data_manager._convert_geo_to_gui_coords.return_value = (100, 200)
+            self.gui.data_manager.add_station = MagicMock()
+            self.gui.data_manager.station_name_to_id = {"Existing Stop": "1"}
+            self.gui.data_manager.add_connection = MagicMock(side_effect=Exception("Connection failed"))
+            self.gui.drawing_module.init_scene = MagicMock()
+            self.gui.draw_network = MagicMock()
+            
+            # 模擬連接站點
+            mock_connect_stop = MagicMock()
+            mock_connect_stop.latitude = 30.1
+            mock_connect_stop.longitude = 120.1
+            self.gui.data_manager.network.get_stop_by_id.return_value = mock_connect_stop
+            
+            self.gui.add_stop_at_location(30.0, 120.0, "New Stop", ["Existing Stop"])
+            
+            # 即使連接失敗，站點仍應該被添加
+            self.gui.data_manager.add_station.assert_called_once()
+            self.gui.drawing_module.init_scene.assert_called_once()
+            self.gui.draw_network.assert_called_once()
+
+    def test_add_stop_at_location_exception(self):
+        """測試添加站點時發生異常"""
+        self.gui.data_manager._convert_geo_to_gui_coords = MagicMock(side_effect=Exception("Conversion failed"))
+        
+        with patch('project.gui.main_window_gui_builder.QMessageBox.warning') as mock_warning:
+            self.gui.add_stop_at_location(30.0, 120.0, "New Stop")
+            mock_warning.assert_called_once()
+
+    def test_calculate_distance(self):
+        """測試距離計算"""
+        with patch('project.gui.main_window_gui_builder.CoordinateUtils') as mock_coord_utils:
+            mock_coord_utils.calculate_haversine_distance.return_value = 2.5
+            
+            result = self.gui._calculate_distance(30.0, 120.0, 30.1, 120.1)
+            
+            mock_coord_utils.calculate_haversine_distance.assert_called_once_with(30.0, 120.0, 30.1, 120.1)
+            self.assertEqual(result, 2.5)
+
+    def test_legend_label_properties(self):
+        """測試圖例標籤屬性"""
+        self.assertIsNotNone(self.gui.legend_label)
+        self.assertEqual(self.gui.legend_label.width(), 320)
+        self.assertEqual(self.gui.legend_label.height(), 300)
+        self.assertIn("Color annotations", self.gui.legend_label.text())
+
+    def test_legend_position_update(self):
+        """測試圖例位置更新"""
+        self.gui.width = MagicMock(return_value=1000)
+        self.gui.legend_label.width = MagicMock(return_value=320)
+        self.gui.legend_label.move = MagicMock()
+        
+        self.gui.update_legend_position()
+        
+        # 驗證位置計算：x = 1000 - 320 - 20 = 660, y = 20
+        self.gui.legend_label.move.assert_called_once_with(660, 20)
+
 if __name__ == '__main__':
     unittest.main() 

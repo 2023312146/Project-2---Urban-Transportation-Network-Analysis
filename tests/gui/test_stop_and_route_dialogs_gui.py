@@ -67,8 +67,8 @@ class TestDataDialogs(unittest.TestCase):
     def test_update_station_type_dialog_with_stations(self):
         """測試更新站點類型對話框 - 有站點存在"""
         self.main_window.data_manager.stations = {
-            '1': {'name': 'Station A'},
-            '2': {'name': 'Station B'}
+            '1': {'name': 'Station A', 'type': 'Residential'},
+            '2': {'name': 'Station B', 'type': 'Commercial'}
         }
         
         with patch('PyQt5.QtWidgets.QInputDialog.getItem') as mock_get_item:
@@ -110,7 +110,7 @@ class TestDataDialogs(unittest.TestCase):
 
     def test_update_station_type_dialog_cancel_second(self):
         """測試更新站點類型對話框 - 第二次取消"""
-        self.main_window.data_manager.stations = {'1': {'name': 'Station A'}}
+        self.main_window.data_manager.stations = {'1': {'name': 'Station A', 'type': 'Residential'}}
         
         with patch('PyQt5.QtWidgets.QInputDialog.getItem') as mock_get_item:
             mock_get_item.side_effect = [('Station A', True), ('Commercial', False)]  # 取消選擇類型
