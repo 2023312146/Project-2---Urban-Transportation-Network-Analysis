@@ -200,7 +200,7 @@ All designs aim for efficiency, scalability, and maintainability, leveraging Pyt
 
 The main interface of the Bus Network Path Planning System provides an intuitive and interactive visualization of the urban transport network. Users can manage stops and connections, analyze paths, and view real-time information through a user-friendly GUI.
 
-### 5.2 Route Recommendation / 路径推荐展示
+### 5.2 Route Recommendation
 
 <div align="center">
     <img src="report_pic/Route%20Recommendation-1.png">
@@ -215,6 +215,45 @@ The main interface of the Bus Network Path Planning System provides an intuitive
 </div>
 
 The system provides comprehensive route recommendation and analysis features. When a user selects a start and end stop, the system enumerates all reachable paths (within a maximum distance of 80km; paths exceeding this threshold are excluded even if technically reachable). For each query, the shortest path (red) and the most efficient path (green, considering both distance and time) are highlighted and compared. All possible paths, their distances, and efficiency metrics are listed for user reference. This is a visual representation of "the shortest path is not the most efficient path", and supports informed decision-making for urban transit planning.
+
+### 5.3 Stop management
+This system supports flexible management of stops in the bus network, including adding, removing, and updating stop types, greatly enhancing the flexibility of network modeling and user experience.
+
+#### 5.3.1 Add Stop / 添加站点
+<div align="center">
+    <img src="report_pic/Add%20stop-1.png">
+</div>
+<div align="center">
+    <img src="report_pic/Add%20stop-2.png">
+</div>
+
+- Users can enter add mode by clicking the "Add Station" button, then click any blank area on the main interface to pop up a dialog, input the stop name and select the type (Residential, Commercial, Industrial, Mixed). The system automatically assigns the wait time.
+- In the code, `station_interaction_event_handler.py` handles click events, dialog input, and data validation to ensure new stops do not overlap with existing ones.
+
+#### 5.3.2 Remove Stop / 删除站点
+- After clicking the "Remove Station" button, users can remove a stop by clicking on it; related connections are updated automatically.
+- The code detects the click position via the event handler, calls the data manager to remove the stop and its edges, and refreshes the interface.
+
+#### 5.3.3 Update Stop Type / 修改站点类型
+<div align="center">
+    <img src="report_pic/Update%20stop%20type-1.png">
+</div>
+<div align="center">
+    <img src="report_pic/Update%20stop%20type-2.png">
+</div>
+<div align="center">
+    <img src="report_pic/Update%20stop%20type-3.png">
+</div>
+
+- Users can update the type of any stop via the "Update Station Type" button; the system automatically adjusts its wait time and visualization color.
+- The relevant code obtains user selection via dialog, updates stop attributes, and reflects changes in the network graph in real time.
+
+
+
+
+
+
+
 
 
 ## 6.Division of the project
