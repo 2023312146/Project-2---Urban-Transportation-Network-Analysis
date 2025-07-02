@@ -33,8 +33,6 @@ This project aims to develop an urban bus network analysis system to meet the fo
 - **Peak-Hour Simulation**: Extend path analysis to simulate traffic congestion
 - **Stop Utilization Insights**: Analyze and visualize stop dwell times and frequencies
 - **Route Optimization**: Suggest modifications to existing routes based on travel demand
-- **Scalability**: Handle large networks with millions of stops and routes
-
 ## Project Structure
 
 ```
