@@ -219,7 +219,7 @@ The system provides comprehensive route recommendation and analysis features. Wh
 ### 5.3 Stop management
 This system supports flexible management of stops in the bus network, including adding, removing, and updating stop types, greatly enhancing the flexibility of network modeling and user experience.
 
-#### 5.3.1 Add Stop / 添加站点
+#### 5.3.1 Add Stop
 <div align="center">
     <img src="report_pic/Add%20stop-1.png">
 </div>
@@ -230,11 +230,11 @@ This system supports flexible management of stops in the bus network, including 
 - Users can enter add mode by clicking the "Add Station" button, then click any blank area on the main interface to pop up a dialog, input the stop name and select the type (Residential, Commercial, Industrial, Mixed). The system automatically assigns the wait time.
 - In the code, `station_interaction_event_handler.py` handles click events, dialog input, and data validation to ensure new stops do not overlap with existing ones.
 
-#### 5.3.2 Remove Stop / 删除站点
+#### 5.3.2 Remove Stop
 - After clicking the "Remove Station" button, users can remove a stop by clicking on it; related connections are updated automatically.
 - The code detects the click position via the event handler, calls the data manager to remove the stop and its edges, and refreshes the interface.
 
-#### 5.3.3 Update Stop Type / 修改站点类型
+#### 5.3.3 Update Stop Type
 <div align="center">
     <img src="report_pic/Update%20stop%20type-1.png">
 </div>
