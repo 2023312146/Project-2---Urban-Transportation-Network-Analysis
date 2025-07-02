@@ -130,32 +130,38 @@ class DrawingModule:
                 dist_text.setFont(font)
                 mw.scene.addItem(dist_text)
             
-            # 绘制所有路径中的站点
-            all_path_stations = set()
+            # 收集路径中的所有站点ID
+            path_stations = set()
             if hasattr(mw, 'shortest_path') and mw.shortest_path:
-                all_path_stations.update(mw.shortest_path)
+                path_stations.update([str(station_id) for station_id in mw.shortest_path])
             if hasattr(mw, 'efficiency_path') and mw.efficiency_path:
-                all_path_stations.update(mw.efficiency_path)
+                path_stations.update([str(station_id) for station_id in mw.efficiency_path])
             
-            for station_id in all_path_stations:
-                station_id = str(station_id)
+            # 绘制路径中的站点
+            for station_id in path_stations:
                 if station_id not in mw.data_manager.stations:
                     continue
+                
                 station_data = mw.data_manager.stations[station_id]
                 size = 20 if station_data["type"] != "Mixed" else 25
                 station = QGraphicsEllipseItem(station_data["x"]-size/2, station_data["y"]-size/2, size, size)
                 station.setData(0, station_id)
+                
+                # 根据站点类型设置颜色
                 if station_data["type"] == "Commercial":
                     color = QColor(239, 83, 80)
                 elif station_data["type"] == "Residential":
                     color = QColor(102, 187, 106)
                 elif station_data["type"] == "Industrial":
                     color = QColor(66, 165, 245)
-                else:
+                else:  # Mixed
                     color = QColor(255, 202, 40)
+                
                 station.setBrush(color)
                 station.setPen(QPen(QColor(0, 0, 0, 150), 2))
-                station.setZValue(10)
+                station.setZValue(10)  # 确保站点在连线上方
+                
+                # 高亮起点和终点
                 if station_id == str(mw.selected_start):
                     highlight = QGraphicsEllipseItem(station_data["x"]-size/2-3, station_data["y"]-size/2-3, size+6, size+6)
                     highlight.setPen(QPen(QColor(76, 175, 80), 4))
@@ -166,24 +172,42 @@ class DrawingModule:
                     highlight.setPen(QPen(QColor(244, 67, 54), 4))
                     highlight.setBrush(QBrush(Qt.NoBrush))
                     mw.scene.addItem(highlight)
+                
                 mw.scene.addItem(station)
+                
+                # 添加站点名称标签
                 text = QGraphicsTextItem(station_data["name"])
-                text.setPos(station_data["x"] + size/2 + 10, station_data["y"] - 15)
+                text.setPos(station_data["x"] + size/2 + 5, station_data["y"] - 15)
                 text.setDefaultTextColor(QColor(33, 33, 33))
                 font = QFont()
                 font.setPointSize(10)
                 font.setBold(True)
                 text.setFont(font)
                 mw.scene.addItem(text)
+                
         else:
-            # 绘制所有连接（不再使用lines概念）
+            # 预处理：识别双向连接
+            bidirectional_edges = set()
+            for (from_id, to_id) in mw.data_manager.distances.keys():
+                if (to_id, from_id) in mw.data_manager.distances:
+                    # 确保只添加一次（较小ID在前）
+                    edge_pair = tuple(sorted([from_id, to_id]))
+                    bidirectional_edges.add(edge_pair)
+            
+            # 绘制所有连接
             for (from_id, to_id), distance in mw.data_manager.distances.items():
                 from_id = str(from_id)
                 to_id = str(to_id)
                 if from_id not in mw.data_manager.stations or to_id not in mw.data_manager.stations:
                     continue
+                
                 from_station = mw.data_manager.stations[from_id]
                 to_station = mw.data_manager.stations[to_id]
+                
+                # 检查是否为双向连接
+                is_bidirectional = tuple(sorted([from_id, to_id])) in bidirectional_edges
+                
+                # 检查是否在路径中
                 is_in_path = False
                 is_in_best_path = False
                 path_index = -1
@@ -199,28 +223,48 @@ class DrawingModule:
                             if str(mw.best_path[i]) == str(from_id) and str(mw.best_path[i+1]) == str(to_id):
                                 is_in_best_path = True
                                 break
-                if is_in_best_path:
-                    line_color = QColor(255, 0, 0)
-                    line_width = 5
-                elif is_in_path:
-                    line_color = getattr(mw, 'path_colors', [QColor(255,0,0)])[path_index]
-                    line_width = 4
+                
+                if is_bidirectional:
+                    # 只处理ID较小的方向，避免重复绘制
+                    if from_id > to_id:
+                        continue
+                    
+                    # 对于双向连接，绘制两条平行线
+                    self.draw_bidirectional_connection(
+                        from_station, 
+                        to_station, 
+                        is_in_best_path,
+                        is_in_path,
+                        path_index,
+                        distance
+                    )
                 else:
-                    line_color = QColor(0, 0, 255)
-                    line_width = 3
-                line = QGraphicsLineItem(from_station["x"], from_station["y"], to_station["x"], to_station["y"])
-                line.setPen(QPen(line_color, line_width))
-                mw.scene.addItem(line)
-                self.draw_arrow(line.line(), line_color)
-                mid_x = (from_station["x"] + to_station["x"]) / 2
-                mid_y = (from_station["y"] + to_station["y"]) / 2
-                dist_text = QGraphicsTextItem(f"{distance:.1f}km")
-                dist_text.setPos(mid_x + 10, mid_y + 10)
-                dist_text.setDefaultTextColor(Qt.darkBlue)
-                font = QFont()
-                font.setPointSize(10)
-                dist_text.setFont(font)
-                mw.scene.addItem(dist_text)
+                    # 单向连接
+                    if is_in_best_path:
+                        line_color = QColor(255, 0, 0)
+                        line_width = 5
+                    elif is_in_path:
+                        line_color = getattr(mw, 'path_colors', [QColor(255,0,0)])[path_index]
+                        line_width = 4
+                    else:
+                        line_color = QColor(0, 0, 255)
+                        line_width = 3
+                    
+                    line = QGraphicsLineItem(from_station["x"], from_station["y"], to_station["x"], to_station["y"])
+                    line.setPen(QPen(line_color, line_width))
+                    mw.scene.addItem(line)
+                    self.draw_arrow(line.line(), line_color)
+                    
+                    # 显示距离标签
+                    mid_x = (from_station["x"] + to_station["x"]) / 2
+                    mid_y = (from_station["y"] + to_station["y"]) / 2
+                    dist_text = QGraphicsTextItem(f"{distance:.1f}km")
+                    dist_text.setPos(mid_x + 10, mid_y + 10)
+                    dist_text.setDefaultTextColor(Qt.darkBlue)
+                    font = QFont()
+                    font.setPointSize(10)
+                    dist_text.setFont(font)
+                    mw.scene.addItem(dist_text)
             
             # 绘制所有站点
             for station_id, station_data in mw.data_manager.stations.items():
@@ -428,7 +472,83 @@ class DrawingModule:
         bg.setPos(note_x, note_y)
         bg.setBrush(QBrush(QColor(255, 255, 255, 200)))  # 白色半透明背景
         bg.setPen(QPen(QColor(200, 200, 200), 1))  # 浅灰色边框
-        
-        # 将背景和文字添加到场景，注意添加顺序（先背景后文字）
         mw.scene.addItem(bg)
         mw.scene.addItem(instruction)
+
+    def draw_bidirectional_connection(self, from_station, to_station, is_in_best_path, is_in_path, path_index, distance):
+        """
+        绘制双向连接，以左右两条平行线表示出入边
+        
+        Args:
+            from_station: 起始站点数据
+            to_station: 目标站点数据
+            is_in_best_path: 是否在最佳路径中
+            is_in_path: 是否在任意路径中
+            path_index: 路径索引（用于颜色选择）
+            distance: 连接的距离
+        """
+        mw = self.main_window
+        
+        # 计算站点之间的方向向量
+        dx = to_station["x"] - from_station["x"]
+        dy = to_station["y"] - from_station["y"]
+        length = math.sqrt(dx*dx + dy*dy)
+        
+        if length == 0:
+            return  # 避免除零错误
+        
+        # 计算垂直于连接线的单位向量，用于偏移
+        perp_x = -dy / length
+        perp_y = dx / length
+        
+        # 每条线的偏移量
+        offset = 5  # 平行线之间的间距
+        
+        # 确定连接线的颜色和宽度
+        if is_in_best_path:
+            line_color1 = QColor(255, 0, 0)  # 最佳路径红色
+            line_color2 = QColor(255, 0, 0)
+            line_width = 3
+        elif is_in_path:
+            path_color = getattr(mw, 'path_colors', [QColor(255,0,0)])[path_index]
+            line_color1 = path_color
+            line_color2 = path_color
+            line_width = 3
+        else:
+            line_color1 = QColor(0, 0, 255)  # 蓝色表示一般连接
+            line_color2 = QColor(0, 0, 255)
+            line_width = 2
+        
+        # 绘制左侧线（从起点到终点，表示出边）
+        left_from_x = from_station["x"] + perp_x * offset
+        left_from_y = from_station["y"] + perp_y * offset
+        left_to_x = to_station["x"] + perp_x * offset
+        left_to_y = to_station["y"] + perp_y * offset
+        
+        left_line = QGraphicsLineItem(left_from_x, left_from_y, left_to_x, left_to_y)
+        left_line.setPen(QPen(line_color1, line_width))
+        mw.scene.addItem(left_line)
+        self.draw_arrow(left_line.line(), line_color1)
+        
+        # 绘制右侧线（从终点到起点，表示入边）
+        right_from_x = from_station["x"] - perp_x * offset
+        right_from_y = from_station["y"] - perp_y * offset
+        right_to_x = to_station["x"] - perp_x * offset
+        right_to_y = to_station["y"] - perp_y * offset
+        
+        right_line = QGraphicsLineItem(right_to_x, right_to_y, right_from_x, right_from_y)
+        right_line.setPen(QPen(line_color2, line_width))
+        mw.scene.addItem(right_line)
+        self.draw_arrow(right_line.line(), line_color2)
+        
+        # 在连接中间显示距离
+        mid_x = (from_station["x"] + to_station["x"]) / 2
+        mid_y = (from_station["y"] + to_station["y"]) / 2
+
+        dist_text = QGraphicsTextItem(f"{distance:.1f}km")
+        dist_text.setPos(mid_x + 10, mid_y + 5)
+        dist_text.setDefaultTextColor(Qt.darkBlue)
+        font = QFont()
+        font.setPointSize(10)
+        dist_text.setFont(font)
+        mw.scene.addItem(dist_text)

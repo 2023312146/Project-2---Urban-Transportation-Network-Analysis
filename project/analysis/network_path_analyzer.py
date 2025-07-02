@@ -3,6 +3,7 @@ from project.algorithms.dfs_all_paths_algorithm import find_all_paths as find_al
 from project.algorithms.path_efficiency_analysis import calculate_efficiency, find_most_efficient_path, compare_paths_by_efficiency_and_distance
 from project.data_structures.transport_network_structure import TransportNetwork
 from project.data_structures.stop_entity import Stop, ZoneType
+from project.algorithms.traffic_condition_manager import TrafficConditionManager
 
 class PathAnalyzer:
     # 定义各类型站点的等待时间（分钟）
@@ -13,8 +14,13 @@ class PathAnalyzer:
         ZoneType.MIXED: 3,
     }
 
-    def __init__(self, data_manager):
+    def __init__(self, data_manager, traffic_manager=None):
         self.data_manager = data_manager
+        self.traffic_manager = traffic_manager or TrafficConditionManager()
+    
+    def set_traffic_manager(self, traffic_manager):
+        """设置交通状况管理器"""
+        self.traffic_manager = traffic_manager
     
     def _get_stop_by_id(self, stop_id):
         return self.data_manager.network.get_stop_by_id(stop_id)
@@ -33,7 +39,8 @@ class PathAnalyzer:
             return [{
                 'path': [stop.stop_ID for stop in path],
                 'distance': distance,
-                'efficiency': calculate_efficiency(path, distance, self.WAIT_TIMES)
+                'efficiency': calculate_efficiency(path, distance, self.WAIT_TIMES, 
+                                                traffic_manager=self.traffic_manager)
             } for path, distance in all_paths]
 
     def find_best_path(self, start, end, by_efficiency=False):

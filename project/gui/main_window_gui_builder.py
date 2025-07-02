@@ -6,13 +6,25 @@ from project.gui.stop_and_route_dialogs_gui import DataDialogs
 from project.gui.network_visualization_drawing import DrawingModule
 from project.gui.station_interaction_event_handler import InteractionHandler
 from project.gui.path_analysis_result_display import PathDisplay
-from PyQt5.QtWidgets import QMessageBox  # 新增导入
+from project.gui.traffic_period_selector import TrafficPeriodSelector
+from project.algorithms.traffic_condition_manager import TrafficConditionManager
+from project.gui.stop_utilization_display import StopUtilizationDisplay
+from project.analysis.stop_utilization_analyzer import StopUtilizationAnalyzer
+from PyQt5.QtWidgets import QMessageBox 
+from project.algorithms.coordinate_utils import CoordinateUtils
 
 class GUIBuilder(QMainWindow):
     def __init__(self, data_manager, path_analyzer):
         super().__init__()
         self.data_manager = data_manager
+        self.traffic_manager = TrafficConditionManager()
         self.path_analyzer = path_analyzer
+        self.path_analyzer.set_traffic_manager(self.traffic_manager)  # 设置路径分析器使用的交通管理器
+        
+        # 初始化站点利用率分析器
+        self.stop_utilization_analyzer = StopUtilizationAnalyzer(data_manager)
+        self.stop_utilization_analyzer.generate_random_data()
+        
         self.selected_start = None
         self.selected_end = None
         self.hovered_station = None
@@ -25,6 +37,9 @@ class GUIBuilder(QMainWindow):
         self.path_display = PathDisplay(self)
         self.init_ui()
         self.draw_network = self.drawing_module.draw_network
+        
+        # 保存默认的站点点击处理函数
+        self.default_station_click_handler = self.handle_station_click
 
     def init_ui(self):
         self.setWindowTitle("Bus Network Path Planning System")
@@ -53,8 +68,20 @@ class GUIBuilder(QMainWindow):
         """)
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
-        main_layout = QHBoxLayout(central_widget)
-        main_layout.setSpacing(15)
+        main_layout = QVBoxLayout(central_widget)  # 改为垂直布局
+        
+        # 添加交通时段选择器
+        self.period_selector = TrafficPeriodSelector(self, self.traffic_manager)
+        self.period_selector.setMaximumHeight(32)  # 更小高度
+        self.period_selector.setStyleSheet("font-size: 12px;")  # 更小字体
+        self.period_selector.periodChanged.connect(self.on_traffic_period_changed)
+        main_layout.addWidget(self.period_selector)
+        
+        # 创建水平布局用于主内容
+        content_layout = QHBoxLayout()
+        content_layout.setSpacing(15)
+        main_layout.addLayout(content_layout)
+        
         control_panel = QWidget()
         control_panel.setStyleSheet("background-color: white; border-radius: 4px; padding: 10px;")
         control_layout = QVBoxLayout(control_panel)
@@ -84,8 +111,8 @@ class GUIBuilder(QMainWindow):
         scroll_area.setWidgetResizable(True)
         scroll_area.setFrameShape(QScrollArea.NoFrame)
         scroll_area.setWidget(self.path_info)
-        scroll_area.setMinimumHeight(250)  # 增加高度
-        scroll_area.setMaximumHeight(400)  # 增加最大高度
+        scroll_area.setMinimumHeight(180)  # 更小最小高度
+        scroll_area.setMaximumHeight(260)  # 更小最大高度
         path_layout.addWidget(scroll_area)
         control_layout.addWidget(path_box)
         
@@ -112,7 +139,8 @@ class GUIBuilder(QMainWindow):
                 "title": "Analytical tools",
                 "color": "#009688",  # 青色系（数据分析类操作）
                 "buttons": [
-                    ("Find Highest Degree Station", self.data_dialogs.find_highest_degree_station_dialog)
+                    ("Find Highest Degree Station", self.data_dialogs.find_highest_degree_station_dialog),
+                    ("Analyze Stop Utilization", self.show_stop_utilization_analysis)
                 ]
             },
             {
@@ -147,11 +175,11 @@ class GUIBuilder(QMainWindow):
                         background-color: {base_color}; 
                         color: white; 
                         text-align: left; 
-                        padding-left: 15px; 
+                        padding-left: 10px; 
                         border-radius: 4px;
-                        min-width: 120px;
-                        font-size: 14px;
-                        padding: 8px;
+                        min-width: 90px;  /* 更小宽度 */
+                        font-size: 12px;   /* 更小字体 */
+                        padding: 6px;      /* 更小内边距 */
                     }}
                     QPushButton:hover {{ background-color: {self.darken_color(base_color)}; }}
                 """)
@@ -160,11 +188,11 @@ class GUIBuilder(QMainWindow):
             
             button_layout.addWidget(group_container)
         control_layout.addWidget(button_box)
-        main_layout.addWidget(control_panel, stretch=1)
+        content_layout.addWidget(control_panel, stretch=1)
         self.view = CustomGraphicsView(self)
         self.scene = QGraphicsScene()
         self.view.setScene(self.scene)
-        main_layout.addWidget(self.view, stretch=4)
+        content_layout.addWidget(self.view, stretch=4)
 
         # 添加右上角图例注释
         self.legend_label = QLabel(self)
@@ -187,6 +215,15 @@ class GUIBuilder(QMainWindow):
         self.legend_label.setAttribute(Qt.WA_TransparentForMouseEvents)
         self.legend_label.raise_()
         self.update_legend_position()
+
+    def on_traffic_period_changed(self, period):
+        """当交通时段改变时的处理"""
+        # 重新计算路径（如果有选择起点和终点）
+        if self.selected_start and self.selected_end:
+            self.update_path_info()
+        
+        # 刷新视图以显示新的等待时间
+        self.draw_network()
 
     def darken_color(self, hex_color, amount=0.7):
         hex_color = hex_color.lstrip('#')
@@ -243,3 +280,84 @@ class GUIBuilder(QMainWindow):
             QMessageBox.information(self, "Save Successful", "The data has been successfully saved to the default CSV file!")
         except Exception as e:
             QMessageBox.critical(self, "Save Failed", f"An error occurred while saving:{str(e)}")
+
+    def show_stop_utilization_analysis(self):
+        """
+        显示站点利用率分析对话框
+        """
+        # 重新计算分析结果，确保使用最新数据
+        self.stop_utilization_analyzer = StopUtilizationAnalyzer(self.data_manager)
+        self.stop_utilization_analyzer.generate_random_data()
+        
+        # 创建并显示分析对话框
+        dialog = StopUtilizationDisplay(self.stop_utilization_analyzer, self)
+        
+        # 连接信号
+        dialog.remove_stop_signal.connect(self.remove_stop_by_id)
+        dialog.add_stop_signal.connect(self.add_stop_at_location)
+        
+        # 显示对话框
+        dialog.exec_()
+    
+    def remove_stop_by_id(self, stop_id):
+        try:
+            stop = self.data_manager.network.get_stop_by_id(stop_id)
+            if stop:
+                self.data_manager.remove_station(stop.name)
+                # 重新绘制网络
+                self.draw_network()
+        except Exception as e:
+            QMessageBox.warning(self, "Stop deletion failed", f"The stop cannot be deleted: {str(e)}")
+    
+    def add_stop_at_location(self, latitude, longitude, name, connect_stop_names=None):
+        """
+        在指定位置添加新站点，并连接到已有站点
+        
+        Args:
+            latitude: 纬度
+            longitude: 经度
+            name: 站点名称
+            connect_stop_names: 要连接的已有站点名称列表
+        """
+        try:
+            # 将地理坐标转换为GUI坐标
+            x, y = self.data_manager._convert_geo_to_gui_coords(latitude, longitude)
+            
+            # 添加新站点（默认为Mixed类型）
+            self.data_manager.add_station(name, x, y, "Mixed")
+            
+            # 如果提供了连接站点列表，添加连接
+            if connect_stop_names:
+                # 计算到每个连接站点的距离，并添加连接
+                for connect_name in connect_stop_names:
+                    try:
+                        # 查找连接站点ID
+                        if connect_name in self.data_manager.station_name_to_id:
+                            # 获取连接站点对象
+                            connect_id = self.data_manager.station_name_to_id[connect_name]
+                            connect_stop = self.data_manager.network.get_stop_by_id(connect_id)
+                            
+                            if connect_stop:
+                                # 计算距离
+                                distance = self._calculate_distance(
+                                    latitude, longitude,
+                                    connect_stop.latitude, connect_stop.longitude
+                                )
+                                
+                                # 添加双向连接
+                                self.data_manager.add_connection(name, connect_name, distance)
+                                self.data_manager.add_connection(connect_name, name, distance)
+                                print(f"Added connection: {name} <-> {connect_name}, distance: {distance:.2f}km")
+                    except Exception as e:
+                        print(f"Error adding connection to {connect_name}: {str(e)}")
+            
+            # 重新绘制网络
+            self.drawing_module.init_scene()  # 重新初始化场景以确保新站点能被正确处理
+            self.draw_network()
+            
+        except Exception as e:
+            QMessageBox.warning(self, "Stop addition failed", f"The stop cannot be added: {str(e)}")
+    
+    def _calculate_distance(self, lat1, lon1, lat2, lon2):
+        # 使用CoordinateUtils类计算距离
+        return CoordinateUtils.calculate_haversine_distance(lat1, lon1, lat2, lon2)

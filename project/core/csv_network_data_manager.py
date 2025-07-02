@@ -2,6 +2,7 @@ import csv
 import os
 from project.data_structures.stop_entity import ZoneType, Stop
 from project.data_structures.transport_network_structure import TransportNetwork
+from project.algorithms.coordinate_utils import CoordinateUtils
 
 class NetworkDataManager:
     def __init__(self, stops_csv_path=None, routes_csv_path=None):
@@ -93,16 +94,6 @@ class NetworkDataManager:
             raise Exception(f"加载路线数据时出错: {str(e)}")
     
     def _parse_zone_type(self, zone_type_str):
-        """
-        解析区域类型字符串为ZoneType枚举
-        
-        Args:
-            zone_type_str (str): 区域类型字符串
-            
-        Returns:
-            ZoneType: 对应的区域类型枚举值
-        """
-        # 关键修改：将键改为全大写，与CSV文件中的zone_type值匹配
         zone_type_map = {
             "RESIDENTIAL": ZoneType.RESIDENTIAL,
             "COMMERCIAL": ZoneType.COMMERCIAL,
@@ -176,37 +167,11 @@ class NetworkDataManager:
     # 辅助方法 - 坐标和类型转换
     def _convert_gui_to_geo_coords(self, x, y):
         """将GUI坐标转换为地理坐标"""
-        min_lat = 48.84216
-        max_lat = 48.891342
-        min_lon = 2.237151
-        max_lon = 2.3955517
-        view_width = 1200
-        view_height = 900
-        padding = 80
-        
-        norm_lon = (x - padding) / (view_width - 2*padding)
-        norm_lat = 1 - (y - padding) / (view_height - 2*padding)
-        lat = min_lat + norm_lat * (max_lat - min_lat)
-        lon = min_lon + norm_lon * (max_lon - min_lon)
-        
-        return lat, lon
+        return CoordinateUtils.convert_gui_to_geo_coords(x, y)
 
     def _convert_geo_to_gui_coords(self, lat, lon):
         """将地理坐标转换为GUI坐标"""
-        min_lat = 48.84216
-        max_lat = 48.891342
-        min_lon = 2.237151
-        max_lon = 2.3955517
-        view_width = 1200
-        view_height = 900
-        padding = 80
-        
-        norm_lat = (lat - min_lat) / (max_lat - min_lat)
-        norm_lon = (lon - min_lon) / (max_lon - min_lon)
-        x = padding + norm_lon * (view_width - 2*padding)
-        y = padding + (1 - norm_lat) * (view_height - 2*padding)
-        
-        return x, y
+        return CoordinateUtils.convert_geo_to_gui_coords(lat, lon)
 
     def _convert_string_to_zone_type(self, zone_string):
         """将字符串转换为ZoneType枚举"""

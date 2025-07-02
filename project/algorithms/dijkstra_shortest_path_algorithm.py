@@ -1,5 +1,6 @@
 from project.data_structures.stop_entity import Stop
 from project.data_structures.transport_network_structure import TransportNetwork
+import heapq
 
 def dijkstra(network: TransportNetwork, start_stop, end_stop):
     """
@@ -20,13 +21,10 @@ def dijkstra(network: TransportNetwork, start_stop, end_stop):
     distances[start_id] = 0
     
     queue = [(0, start_id)]
+    heapq.heapify(queue)
 
     while queue:
-        min_index = 0
-        for i in range(1, len(queue)):
-            if queue[i][0] < queue[min_index][0]:
-                min_index = i
-        current_distance, current_id = queue.pop(min_index)
+        current_distance, current_id = heapq.heappop(queue)
 
         if current_distance > distances[current_id]:
             continue
@@ -39,7 +37,7 @@ def dijkstra(network: TransportNetwork, start_stop, end_stop):
             if distance < distances[neighbor_id]:
                 distances[neighbor_id] = distance
                 previous_stops[neighbor_id] = current_id
-                queue.append((distance, neighbor_id))
+                heapq.heappush(queue, (distance, neighbor_id))
 
     # 重建路径
     path = []

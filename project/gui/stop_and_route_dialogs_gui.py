@@ -10,8 +10,28 @@ class DataDialogs:
         self.selected_from_station = None  # 用于存储添加/删除连接时选中的起始站点
         self.connection_mode = None  # 'add' 或 'remove' 表示当前连接操作模式
 
+    def reset_all_modes(self):
+        """重置所有交互模式"""
+        # 如果当前处于连接模式，取消它
+        if self.connection_mode:
+            self.cancel_connection_mode()
+        
+        # 重置交互处理器的模式
+        self.main_window.interaction_handler.add_station_mode = False
+        self.main_window.interaction_handler.remove_station_mode = False
+        
+        # 恢复默认点击处理函数
+        if hasattr(self.main_window, 'default_station_click_handler'):
+            self.main_window.handle_station_click = self.main_window.default_station_click_handler
+        
+        # 恢复默认光标
+        self.main_window.view.setCursor(Qt.ArrowCursor)
+
     def add_station_dialog(self):
         """添加站点对话框，现在支持直接点击添加"""
+        # 重置所有模式
+        self.reset_all_modes()
+        
         # 启用添加站点模式
         self.main_window.interaction_handler.add_station_mode = True
         
@@ -22,6 +42,9 @@ class DataDialogs:
         """删除站点对话框，现在支持直接点击删除"""
         if not self.data_manager.stations:
             return
+        
+        # 重置所有模式
+        self.reset_all_modes()
         
         # 启用删除站点模式
         self.main_window.interaction_handler.remove_station_mode = True
@@ -35,7 +58,18 @@ class DataDialogs:
         station_names = {v['name']: k for k, v in self.data_manager.stations.items()}
         station_name, ok = QInputDialog.getItem(self.main_window, "Update station type", "Select a stop:", list(station_names.keys()))
         if ok and station_name:
-            station_type, ok = QInputDialog.getItem(self.main_window, "Update station type", "Stop type:", ["Residential", "Commercial", "Mixed", "Industrial"])
+            # 获取当前站点ID和类型
+            station_id = station_names[station_name]
+            current_type = self.data_manager.stations[station_id]['type']
+            
+            # 所有可能的类型选项
+            all_types = ["Residential", "Commercial", "Industrial", "Mixed"]
+            
+            # 过滤掉当前类型，只保留其他类型
+            other_types = [t for t in all_types if t != current_type]
+            
+            # 显示只包含其他类型的下拉框
+            station_type, ok = QInputDialog.getItem(self.main_window, "Update station type", f"Current type: {current_type}\nSelect new type:", other_types)
             if ok:
                 self.data_manager.update_station_type(station_name, station_type)
                 self.main_window.draw_network()
@@ -44,6 +78,9 @@ class DataDialogs:
         """添加连接，直接进入点击选择站点模式"""
         if len(self.data_manager.stations) < 2:
             return
+        
+        # 重置所有模式
+        self.reset_all_modes()
         
         # 直接启动连接点击模式
         self.start_connection_click_mode('add')
@@ -56,26 +93,49 @@ class DataDialogs:
         if len(self.data_manager.distances) == 0:
             return
         
+        # 重置所有模式
+        self.reset_all_modes()
+        
         # 启动连接点击模式，但用于删除
         self.start_connection_click_mode('remove')
         
         # 使用禁止光标表示删除操作
         self.main_window.view.setCursor(Qt.ForbiddenCursor)
 
+    def cancel_connection_mode(self):
+        """取消当前的连接模式"""
+        if self.connection_mode:
+            # 恢复默认点击处理函数
+            if hasattr(self.main_window, 'default_station_click_handler'):
+                self.main_window.handle_station_click = self.main_window.default_station_click_handler
+            elif hasattr(self, 'original_click_handler'):
+                self.main_window.handle_station_click = self.original_click_handler
+            
+            # 清除状态
+            self.selected_from_station = None
+            self.connection_mode = None
+            
+            # 恢复鼠标样式
+            self.main_window.view.setCursor(Qt.ArrowCursor)
+
     def start_connection_click_mode(self, mode='add'):
         self.selected_from_station = None
         self.connection_mode = mode
         
-        # 保存原来的点击处理函数
-        self.original_click_handler = self.main_window.handle_station_click
+        # 确保我们保存原始处理函数（如果还没保存）
+        if not hasattr(self, 'original_click_handler') or self.original_click_handler is None:
+            self.original_click_handler = self.main_window.handle_station_click
         
         # 重写点击处理函数
         def connection_click_handler(pos):
             items = self.main_window.scene.items(pos)
+            station_found = False
+            
             for item in items:
                 if hasattr(item, 'data') and callable(item.data):
                     station_id = item.data(0)
                     if station_id:
+                        station_found = True
                         if self.selected_from_station is None:
                             # 选择第一个站点
                             self.selected_from_station = station_id
@@ -91,6 +151,13 @@ class DataDialogs:
                             if self.connection_mode == 'add':
                                 # 检查连接是否已存在
                                 if (self.selected_from_station, to_station_id) in self.data_manager.distances:
+                                    # 显示警告对话框
+                                    msg = QMessageBox()
+                                    msg.setIcon(QMessageBox.Warning)
+                                    msg.setWindowTitle("Warning")
+                                    msg.setText("There is already a route here")
+                                    msg.setStandardButtons(QMessageBox.Ok)
+                                    msg.exec_()
                                     return
                                     
                                 # 直接计算距离并添加连接
@@ -99,26 +166,30 @@ class DataDialogs:
                             else:  # self.connection_mode == 'remove'
                                 # 检查连接是否存在
                                 if (self.selected_from_station, to_station_id) not in self.data_manager.distances:
+                                    # 显示警告对话框
+                                    msg = QMessageBox()
+                                    msg.setIcon(QMessageBox.Warning)
+                                    msg.setWindowTitle("警告")
+                                    msg.setText("此处没有边")
+                                    msg.setStandardButtons(QMessageBox.Ok)
+                                    msg.exec_()
                                     return
                                 
                                 # 直接删除连接
                                 self.data_manager.remove_connection(from_name, to_name)
                             
-                            # 恢复原始点击处理函数
-                            self.main_window.handle_station_click = self.original_click_handler
-                            
-                            # 清除状态并刷新
-                            self.selected_from_station = None
-                            self.connection_mode = None
-                            
-                            # 恢复鼠标样式
-                            self.main_window.view.setCursor(Qt.ArrowCursor)
+                            # 重置连接模式
+                            self.cancel_connection_mode()
                             
                             # 重绘网络
                             self.main_window.draw_network()
                             
                         return
-                
+            
+            # 如果点击空白区域，取消当前连接模式
+            if not station_found and self.connection_mode:
+                self.cancel_connection_mode()
+        
         # 设置临时点击处理函数
         self.main_window.handle_station_click = connection_click_handler
 

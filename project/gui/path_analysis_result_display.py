@@ -24,12 +24,12 @@ class PathDisplay:
         
         # 存储路径信息到主窗口
         if compare_result:
-            self.main_window.shortest_path = compare_result.get('dijkstra_path', [])  # 最短路径
-            self.main_window.efficiency_path = compare_result.get('efficiency_path', [])  # 最高效路径
-            self.main_window.shortest_distance = compare_result.get('dijkstra_distance', 0.0)
-            self.main_window.efficiency_distance = compare_result.get('efficiency_distance', 0.0)
-            self.main_window.efficiency_value = compare_result.get('efficiency_value', 0.0)
-            self.main_window.paths_are_same = compare_result.get('is_same', False)
+            self.main_window.shortest_path = compare_result['dijkstra_path']  # 最短路径
+            self.main_window.efficiency_path = compare_result['efficiency_path']  # 最高效路径
+            self.main_window.shortest_distance = compare_result['dijkstra_distance']
+            self.main_window.efficiency_distance = compare_result['efficiency_distance']
+            self.main_window.efficiency_value = compare_result['efficiency_value']
+            self.main_window.paths_are_same = compare_result['is_same']
         else:
             self.main_window.shortest_path = []
             self.main_window.efficiency_path = []
@@ -46,8 +46,7 @@ class PathDisplay:
             info_text += "No path found."
         else:
             info_text += "<b>All reachable paths:</b><br>"  # 添加<b>标签实现加粗
-        all_paths = self.main_window.all_paths or []
-        for idx, path_info in enumerate(all_paths):
+        for idx, path_info in enumerate(self.main_window.all_paths):
             path = [str(station) for station in path_info['path']]
             path_names = []
             for station_id in path:
@@ -78,4 +77,7 @@ class PathDisplay:
             info_text += f"<b>Most Efficient Path (Green):</b><br>{efficiency_path_str} (distance: {self.main_window.efficiency_distance:.2f}km, efficiency: {self.main_window.efficiency_value:.2f}km/h)<br>"
         
         self.main_window.path_info.setText(info_text)
-        self.main_window.path_info.setTextFormat(Qt.TextFormat.RichText)
+        self.main_window.path_info.setTextFormat(Qt.RichText)
+        
+        # 重绘网络，确保显示路径
+        self.main_window.draw_network()
