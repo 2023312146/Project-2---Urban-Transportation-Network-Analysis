@@ -121,7 +121,7 @@ Or run individual test files:
 python -m pytest tests/test_algorithms.py
 python -m pytest tests/test_network.py
 ```
-## 3. The overall design
+## 3. The Overall Design
 
 This section presents the overall architecture, detailing the design ideas, rationale, and advantages of key algorithms and data structures in each package and file under /project. 
 
@@ -200,6 +200,15 @@ All designs aim for efficiency, scalability, and maintainability, leveraging Pyt
 
 The main interface of the Bus Network Path Planning System provides an intuitive and interactive visualization of the urban transport network. Users can manage stops and connections, analyze paths, and view real-time information through a user-friendly GUI.
 
+### 5.2 Route Recommendation / 路径推荐展示
+
+![Route Recommendation 1](project/Route%20Recommendation-1.png)
+
+![Route Recommendation 2](project/Route%20Recommendation-2.png)
+
+![Route Recommendation 3](project/Route%20Recommendation-3.png)
+
+The system provides comprehensive route recommendation and analysis features. When a user selects a start and end stop, the system enumerates all reachable paths (within a maximum distance of 80km; paths exceeding this threshold are excluded even if technically reachable). For each query, the shortest path (red) and the most efficient path (green, considering both distance and time) are highlighted and compared. All possible paths, their distances, and efficiency metrics are listed for user reference. This is a visual representation of "the shortest path is not the most efficient path", and supports informed decision-making for urban transit planning.
 
 
 ## 6.Division of the project
