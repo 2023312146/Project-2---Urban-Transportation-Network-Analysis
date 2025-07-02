@@ -248,6 +248,30 @@ This system supports flexible management of stops in the bus network, including 
 - Users can update the type of any stop via the "Update Station Type" button; the system automatically adjusts its wait time and visualization color.
 - The relevant code obtains user selection via dialog, updates stop attributes, and reflects changes in the network graph in real time.
 
+### 5.4 Connection management / 连接管理
+
+This system supports flexible management of connections between stops in the bus network, including adding and removing connections, making it easy to dynamically adjust the network structure as needed.
+
+#### 5.4.1 Add Connection / 添加连接
+<div align="center">
+    <img src="report_pic/Add%20connection-1.png">
+</div>
+
+- After clicking the "Add Connection" button, users select the start and end stops in sequence. A dialog pops up to input distance and other information, and a directed edge is added to the network upon confirmation.
+- The code captures user selections via the event handler, updates the adjacency list in the data manager, and refreshes the visualization.
+
+#### 5.4.2 Remove Connection / 删除连接
+<div align="center">
+    <img src="report_pic/Remove%20connection-2.png">
+</div>
+<div align="center">
+    <img src="report_pic/Remove%20connection-1.png">
+</div>
+
+- After clicking the "Remove Connection" button, users select the start and end stops to disconnect, and the system automatically removes the corresponding directed edge.
+- The event handler recognizes user actions, the data manager updates the adjacency list, and the interface is synchronized.
+
+
 
 
 
