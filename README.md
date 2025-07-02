@@ -40,40 +40,44 @@ This project aims to develop an urban bus network analysis system to meet the fo
 ```
 efrei2025/
 ├── main.py                          # Main application entry point
-├── data/                            # Data files directory
+├── data/                            # Data files (CSV for stops and routes)
 │   ├── urban_transport_network_routes.csv
 │   └── urban_transport_network_stops.csv
-├── project/                         # Main project package
-│   ├── algorithms/                  # Path finding algorithms
-│   │   ├── __init__.py
-│   │   ├── dijkstra.py             # Dijkstra's shortest path algorithm
-│   │   └── dfs.py                  # Depth-First Search algorithm
-│   └── module/                     # Core application modules
-│       ├── __init__.py
-│       ├── NetworkDataManager.py   # Data management and network operations
-│       ├── gui_builder.py          # Main GUI window and layout
-│       ├── custom_view.py          # Custom graphics view for network display
-│       ├── drawing_module.py       # Network visualization and drawing
-│       ├── interaction_handler.py  # User interaction handling
-│       ├── path_display.py         # Path information display
-│       ├── data_dialogs.py         # Dialog boxes for data input
-│       ├── RouteAnalyzer.py        # Path analysis and optimization
-│       ├── network.py              # Network data structures
-│       └── stop.py                 # Stop/station class definitions
-├── tests/                          # Test suite
-│   ├── test_algorithms.py
-│   ├── test_csv.py
-│   ├── test_custom_view.py
-│   ├── test_data_dialogs.py
-│   ├── test_drawing_module.py
-│   ├── test_gui_builder.py
-│   ├── test_interaction_handler.py
-│   ├── test_network_data_manager.py
-│   ├── test_network.py
-│   ├── test_path_display.py
-│   ├── test_route_analyzer.py
-│   └── test_stop.py
-└── README.md                       # Project documentation
+├── project/                         # Main project source code
+│   ├── algorithms/                  # Path finding and analysis algorithms
+│   │   ├── coordinate_utils.py
+│   │   ├── dfs_all_paths_algorithm.py
+│   │   ├── dijkstra_shortest_path_algorithm.py
+│   │   ├── distance_calculation.py
+│   │   ├── path_efficiency_analysis.py
+│   │   └── traffic_condition_manager.py
+│   ├── analysis/                    # Network and stop analysis modules
+│   │   ├── network_path_analyzer.py
+│   │   └── stop_utilization_analyzer.py
+│   ├── core/                        # Data management and CSV operations
+│   │   └── csv_network_data_manager.py
+│   ├── data_structures/             # Core data structures
+│   │   ├── stop_entity.py
+│   │   └── transport_network_structure.py
+│   ├── gui/                         # GUI and visualization modules
+│   │   ├── interactive_graphics_view.py
+│   │   ├── main_window_gui_builder.py
+│   │   ├── network_visualization_drawing.py
+│   │   ├── path_analysis_result_display.py
+│   │   ├── station_interaction_event_handler.py
+│   │   ├── stop_and_route_dialogs_gui.py
+│   │   ├── stop_utilization_display.py
+│   │   └── traffic_period_selector.py
+│   └── data/                        # (Optional) Data files for internal use
+│       ├── urban_transport_network_routes.csv
+│       └── urban_transport_network_stops.csv
+├── tests/                           # Test suite for all modules
+│   ├── algorithms/
+│   ├── analysis/
+│   ├── core/
+│   ├── data_structures/
+│   └── gui/
+└── README.md                        # Project documentation
 ```
 ### 2.2 Prerequisites
 
@@ -422,7 +426,7 @@ Building this bus network analysis system truly made us appreciate the powerful 
 
 During development, designing reasonable data structures (especially for algorithmic and analytical components) and ensuring smooth user operation flow were two major challenges. We divided the entire system into several modules—separating data, algorithms, and user interface—to avoid conflicts, making the code structure exceptionally clear and easy to modify.
 
-Additionally, converting between geographic coordinates (longitude/latitude) and screen pixel coordinates underscored for us the importance of spatial data processing. The system’s ability to automatically calculate actual distances between stations not only streamlined data entry but also guaranteed result accuracy.
+Additionally, converting between geographic coordinates (longitude/latitude) and screen pixel coordinates underscored for us the importance of spatial data processing. The system's ability to automatically calculate actual distances between stations not only streamlined data entry but also guaranteed result accuracy.
 
 Most importantly, through this project, we genuinely mastered the design and analysis of structures such as stacks, lists, and graphs, while comprehending their underlying principles—for instance, recognizing that stacks operate on a "Last-In-First-Out" basis. This project solidified our knowledge from data structure coursework.
 
