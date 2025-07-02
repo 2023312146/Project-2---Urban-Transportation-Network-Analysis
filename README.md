@@ -1,6 +1,22 @@
-﻿# Transport Network Analysis
+﻿## 1. Description of Project
+### 1.1 Project Introduction
 
-This project provides a comprehensive Python-based transport network analysis system with a graphical user interface built using PyQt5. The system allows users to visualize, analyze, and optimize transport networks with various algorithms including Dijkstra's shortest path and DFS (Depth-First Search).
+This project develops an urban bus network analysis system: modeling stops (nodes) and routes (directed edges) via graph theory to enable dynamic network construction, multi-route travel time prediction (weighted by zone types), Dijkstra's shortest path algorithm, and route efficiency optimization (Efficiency=Distance/Time). Key innovation validates "shortest path ≠ most efficient path", with extensions for peak-hour traffic simulation and stop utilization analytics, delivering a decision-making tool for smart transit.
+
+### 1.2 Design Requirements & Analysis  
+This project aims to develop an urban bus network analysis system to meet the following core requirements:
+1. **Dynamic Network Modeling & Management**  
+   - Support dynamic construction of the bus network using graph theory, with stops as nodes and routes as edges. The system allows flexible addition, deletion, and modification of stops and routes to adapt to real-world network changes.
+2. **Multi-path & Efficiency Analysis**  
+   - Implements multiple path-finding algorithms (e.g., Dijkstra's shortest path, DFS all paths), enabling not only shortest path calculation but also efficiency analysis (Efficiency = Distance/Time), validating that "shortest path ≠ most efficient path" in practice.
+3. **Zoning & Peak-hour Simulation**   
+   - Stops are categorized (residential, commercial, industrial, mixed), each with different waiting times. The system supports peak-hour traffic simulation to analyze the impact of congestion on path selection and efficiency.
+4. **Visualization & Interactive Experience**   
+   - Provides an intuitive, interactive graphical interface for real-time display of the network structure, paths, and stop types, facilitating user operation and decision-making.
+5. **Data Analysis & Optimization Suggestions**   
+   - Supports stop utilization analysis, dwell time statistics, and route optimization suggestions to assist in system optimization and management decisions.
+6. **Scalability & Real-time Capability**  
+   - The architecture supports large-scale networks (millions of stops and routes) and can integrate real-time bus data for future expansion and practical application needs.
 
 ## Features
 
@@ -12,6 +28,12 @@ This project provides a comprehensive Python-based transport network analysis sy
 - **Zone-based Analysis**: Different station types (Residential, Commercial, Industrial, Mixed) with varying wait times
 - **Efficiency Analysis**: Compare different path options based on distance and efficiency metrics
 - **User-friendly GUI**: Intuitive interface with color-coded visualizations and interactive controls
+- **Dynamic Path Visualization**: Show travel time and distance on selected path
+- **Path Comparison**: Highlight and compare multiple paths for optimal selection
+- **Peak-Hour Simulation**: Extend path analysis to simulate traffic congestion
+- **Stop Utilization Insights**: Analyze and visualize stop dwell times and frequencies
+- **Route Optimization**: Suggest modifications to existing routes based on travel demand
+- **Scalability**: Handle large networks with millions of stops and routes
 
 ## Project Structure
 
