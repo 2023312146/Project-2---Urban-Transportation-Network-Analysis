@@ -248,11 +248,11 @@ This system supports flexible management of stops in the bus network, including 
 - Users can update the type of any stop via the "Update Station Type" button; the system automatically adjusts its wait time and visualization color.
 - The relevant code obtains user selection via dialog, updates stop attributes, and reflects changes in the network graph in real time.
 
-### 5.4 Connection management / 连接管理
+### 5.4 Connection management
 
 This system supports flexible management of connections between stops in the bus network, including adding and removing connections, making it easy to dynamically adjust the network structure as needed.
 
-#### 5.4.1 Add Connection / 添加连接
+#### 5.4.1 Add Connection
 <div align="center">
     <img src="report_pic/Add%20connection-1.png">
 </div>
@@ -260,7 +260,7 @@ This system supports flexible management of connections between stops in the bus
 - After clicking the "Add Connection" button, users select the start and end stops in sequence. A dialog pops up to input distance and other information, and a directed edge is added to the network upon confirmation.
 - The code captures user selections via the event handler, updates the adjacency list in the data manager, and refreshes the visualization.
 
-#### 5.4.2 Remove Connection / 删除连接
+#### 5.4.2 Remove Connection
 <div align="center">
     <img src="report_pic/Remove%20connection-2.png">
 </div>
@@ -271,11 +271,32 @@ This system supports flexible management of connections between stops in the bus
 - After clicking the "Remove Connection" button, users select the start and end stops to disconnect, and the system automatically removes the corresponding directed edge.
 - The event handler recognizes user actions, the data manager updates the adjacency list, and the interface is synchronized.
 
+### 5.5 Analytical tools
 
+#### 5.5.1 Find highest degree stop
+<div align="center">
+    <img src="report_pic/Find%20Highest%20Degree%20Stop.png">
+</div>
 
+- After clicking the "Find Highest Degree Station" button, the system analyzes and highlights the stop with the most connections in the network.
+- The code traverses the adjacency list, counts the degree of each stop, including both incoming and outgoing connections, and provides real-time feedback.
 
+#### 5.5.2 Analyze stop utilization
+<div align="center">
+    <img src="report_pic/Stop%20utilization%20analysis-1.png">
+</div>
+<div align="center">
+    <img src="report_pic/Stop%20utilization%20analysis-2.png">
+</div>
+<div align="center">
+    <img src="report_pic/Stop%20utilization%20analysis-3.png">
+</div>
+<div align="center">
+    <img src="report_pic/Stop%20utilization%20analysis-4.png">
+</div>
 
-
+- When the user clicks the "Analyse Stop Utilization" button, the system automatically counts the utilization of each stop, including the number of times each stop is visited or passed through in all path analyses. The results are visualized in lists, helping users identify the busiest or least used stops, providing data support for bus scheduling and network optimization.
+- The main logic is in `project/analysis/stop_utilization_analyzer.py`. During path analysis (DFS, shortest path, etc.), the system records all stops visited in each path and accumulates their utilization in a dictionary, then sorts and visualizes the results.
 
 
 

@@ -23,7 +23,7 @@ class StopUtilizationDisplay(QDialog):
         self.analyzer = utilization_analyzer
         self.results = utilization_analyzer.optimize_network()
         
-        self.setWindowTitle("站点利用率分析")
+        self.setWindowTitle("Stop utilization analysis")
         self.resize(800, 600)
         
         self._init_ui()
