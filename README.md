@@ -195,8 +195,9 @@ All designs aim for efficiency, scalability, and maintainability, leveraging Pyt
 ## 5.Project results
 ## 6.Division of the project
 
-*   **Wang Tianyi**: Responsible for designing data structures and algorithms, writing the majority of code including algorithms, unit tests, frontend, and the main program. Collaborates on reports and presentations, and assigns tasks to others.
-*   **Dong Che**: Primarily responsible for writing frontend interface code, designing test cases, conducting coverage testing, and collaborating on algorithm design and analysis. Also collaborates on reports and presentations.
-*   **Shao Liangyu**: Tasked with researching algorithms and primarily responsible for writing reports and presentations.
+*   **Tianyi Wang**: Responsible for designing data structures and algorithms, writing the majority of code including algorithms, unit tests, frontend, and the main program. Collaborates on reports and presentations, and assigns tasks to others.
+*   **Che Dong**: Primarily responsible for writing frontend interface code, designing test cases, conducting coverage testing, and collaborating on algorithm design and analysis. Also collaborates on reports and presentations.
+*   **Liangyu Shao**: Tasked with researching algorithms and primarily responsible for writing reports and presentations.
+*   **Yixiao Wang**:Actually I don't konw...
 
 ## 7.Summary of the experiment
