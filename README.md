@@ -68,7 +68,7 @@ efrei2025/
 │   │   ├── stop_and_route_dialogs_gui.py
 │   │   ├── stop_utilization_display.py
 │   │   └── traffic_period_selector.py
-│   └── data/                        # (Optional) Data files for internal use
+│   └── data/                        
 │       ├── urban_transport_network_routes.csv
 │       └── urban_transport_network_stops.csv
 ├── tests/                           # Test suite for all modules
