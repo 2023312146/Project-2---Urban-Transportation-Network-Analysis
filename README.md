@@ -33,7 +33,9 @@ This project aims to develop an urban bus network analysis system to meet the fo
 - **Peak-Hour Simulation**: Extend path analysis to simulate traffic congestion
 - **Stop Utilization Insights**: Analyze and visualize stop dwell times and frequencies
 - **Route Optimization**: Suggest modifications to existing routes based on travel demand
-## Project Structure
+
+## 2.Quick Start
+### 2.1 Project Structure
 
 ```
 efrei2025/
@@ -73,15 +75,12 @@ efrei2025/
 │   └── test_stop.py
 └── README.md                       # Project documentation
 ```
-
-## Quick Start
-
-### Prerequisites
+### 2.2 Prerequisites
 
 - Python 3.7+
 - PyQt5
 
-### Installation
+### 2.3 Installation
 
 1. Clone the repository:
 ```bash
@@ -94,7 +93,7 @@ cd efrei2025
 pip install PyQt5
 ```
 
-### Running the Analysis
+### 2.4 Running the Analysis
 
 To start the transport network analysis application:
 
@@ -108,7 +107,7 @@ The application will open with a graphical interface showing:
 - Color-coded stations based on zone types
 - Interactive path finding capabilities
 
-### Running Tests
+### 2.5 Running Tests
 
 To run the test suite:
 
@@ -122,6 +121,18 @@ Or run individual test files:
 python -m pytest tests/test_algorithms.py
 python -m pytest tests/test_network.py
 ```
+
+
+
+
+
+
+
+
+
+
+
+
 ### Project Division
 
 *   **Wang Tianyi**: Responsible for designing data structures and algorithms, writing the majority of code including algorithms, unit tests, frontend, and the main program. Collaborates on reports and presentations, and assigns tasks to others.
