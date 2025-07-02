@@ -192,6 +192,92 @@ This section presents the overall architecture, detailing the design ideas, rati
 All designs aim for efficiency, scalability, and maintainability, leveraging Python's built-in data structures (lists, dicts, heaps) to ensure good performance.
 
 ## 4.Implementation
+
+This section mainly explains what code features are chosen and how they are implemented, and why they are chosen
+
+### 4.1 Algorithm packages
+
+- **coordinate_utils.py**
+  - A variety of geocoordinate-related calculations and transformations are implemented primarily through a CoordinateUtils class, which uses a dictionary (dict) structure to store and look up site details (such as latitude and longitude), which enables access to site properties, and facilitates calculations related to geographic distance and other related calculations.
+  - Both the complexity and the spatial complexity are O(1)
+
+- **dfs_all_paths_algorithm.py**
+  - Traversing all paths, we use DFS in combination with a stack structure。We set a limit max_distance save time and space efficiency, but mainly use the stackThe stack is used to store the information of the current path being explored, and the elements include: the current station, the path traveled, and the cumulative distance.Whenever a new neighbor is reached from the current site, the new path information is pressed into the top of the stack, and then a path branch pops up from the top of the stack each time, and continues to explore the next neighbor of the branch, and the loop continues until the end point is reached, and finally the complete path is recorded.Let's say I'm going from La Defense to Gare de Lyon. Start with La Defense as the first element, press into the stack, and then pop La Defense. Its neighbors are Saint-Lazare and Montparnasse, and the two neighbors are put into the stack [("Saint-Lazare", ["La Defense", "Saint-Lazare"], 8.9), ("Montparnasse", ["La Defense", "Montparnasse"], 5.5)] and the Montparnasse pops up for the second time. Neighbors of Montparnasse and Chatelet,Then put it into the stack ("Chatelet", ["La Defense", "Montparnasse", "Chatelet"], 17.1) Current stack:("Saint-Lazare", ["La Defense", "Saint-Lazare"], 8.9), ("Chatelet", ["La Defense", "Montparnasse", "Chatelet"], 17.1) and so on traverse all paths.
+  - The purpose of the adjacency table is to make it easier to find neighbors and go to the service stack.
+  - Both temporal and spatial complexity depend on the number of all simple paths from the start to the end, and at worst it is about O(P·n), where P is the number of paths and n is the number of nodes.
+
+
+- **dijkstra_shortest_path_algorithm.py**
+  - The smallest heap is used in dijkstra in the code, and the site with the smallest distance is ejected from the smallest heap each time, ensuring that each step processes the node that is currently the most promising to be the shortest path. When a new, shorter path is discovered, the site and the new distance are re-pressed into the heap so that it can be prioritized next time.Let's take an example, first pop La Defense from the heap and check the neighbors: Saint-Lazare, Montparnasse, update the distance to merge into the heap [(5.5, "Montparnasse"), (8.9, "Saint-Lazare")] to see who in the heap is the shortest distance, and then pop up the Montparnasse of the shortest path. Next pop up Montparnasse, go again to detect its neighbor Chatelet merge into the heap [(8.9, "Saint-Lazare"), (17.1, "Chatelet")] to update the distance, then pop up Saint-Lazare again for the shortest path, then look for neighbors, and so on, and finally find the shortest path.
+  - The purpose of the adjacency table is to make it easier to find neighbors and serve the smallest heap.
+  - Each node can enter the heap once and leave the heap once, and the heap operation O(logn) is used. Each edge results in a maximum of one heap insert (update distance) for a total of m edges.So the total time complexity is: O((n+m)logn).
+  - distances is O(n) in the distances dictionary, O(n) in the precursor node dictionary previous_stops, the minimum heap queue is O(n in the worst case), the list for path reconstruction is O(n), and the spatial complexity is O(n) for comprehensive analysis.
+
+
+
+- **path_efficiency_analysis.py**
+  - Distance calculations are mainly achieved by defining function interfaces.
+Functions are used to calculate path efficiency, including lists (path_stops, Stop objects, average velocity), dictionaries (dijkstra_path, dijkstra_distance, efficiency_path, efficiency_value, efficiency_distance, is_same), and objects (stop_ID, zone_ type) is convenient for batch calculation, comparison, and result output of path efficiency.
+- Call find_most_efficient_path to traverse all paths as O(m) and m as the total number of paths. Convert the list of Stop objects with the shortest path to the stop_ID list O(n), where n is the shortest path length and the time complexity is O(m+n).
+- It is mainly used to store the converted stop_ID list and result dictionary, and the space consumption is proportional to the shortest path length, and the space complexity is O(n).
+
+- **traffic_condition_manager.py**
+  - The TrafficConditionManager class is used to manage and query traffic conditions. Inside the class, there is extensive use of dictionaries to store wait times and speed presets for different time periods and different region types.
+  
+
+### 4.2 Analysis Package
+
+- **network_path_analyzer.py**
+  - The analysis of traffic network paths is primarily implemented through the PathAnalyzer class. This class internally uses dictionaries (to store station wait times, path attributes), lists (to store paths, station IDs, the entire set of paths), and objects (such as Stop, TransportNetwork, and TrafficConditionManager instances) to organize and process data. Path-related information is typically stored in the form of dictionaries and lists to facilitate calculation and attribute access.
+  - Time complexity: The path correlation is O(k·n), k is the number of paths, and n is the number of stations. Only the shortest circuit of a single path (e.g. Dijkstra) is O((n+m)·log n), and the statistical degree is O(n+m).
+  - Space complexity: The path correlation is O(k·n).
+
+
+- **stop_utilization_analyzer.py**
+  -The StopUtilizationAnalyzer class is used to analyze and optimize site utilization. Internally, the class organizes and processes data using dictionaries (which store ridership, frequency of arrivals, utilization scores), lists (which store site IDs, station pairs that are recommended to be merged, and information about recommended new stops), tuples (efficiency score sorting results), and collections (adjacency processing). Site and network information is referenced by object attributes, and the calculation and filtering results are mainly output from lists and dictionaries.
+  - The nested cycle of site merge recommendations and new site recommendations requiring pairs of all sites to be compared, and distances and filters to be calculated for each two sites, results in a nested cycle of operations proportional to the square of the number of sites. Spatially, results such as merge suggestions may also store information for all site pairs in the worst case, so they are also O(n²).
+
+### 4.3 Core Package
+
+- **csv_network_data_manager.py**
+  - The NetworkDataManager class is used to manage and manipulate transportation network data. This class makes extensive use of dictionaries (which store site information, site name-to-ID mappings, adjacency tables), lists (which store all site objects, connection relationships), and objects (e.g., Stop, TransportNetwork) to process data. The data in a CSV file is read, written, and converted through dictionaries and objects.
+
+### 4.4 Data_structures Package
+
+- **stop_entity.py**
+  - The Stop class encapsulates the number, name, latitude and longitude, and area type of the site in the form of objects, and realizes the comparison, hashing, and readability of objects through methods and methods (__eq__, __lt__, and __hash__).
+
+- **transport_network_structure.py**
+  -The management of the transportation network is mainly realized through the TransportNetwork class. Internally, the class uses dictionaries (adjacency_list stores the outgoing edges of each site, reverse_adjacency stores the inbound edges, and stops stores all site objects) and represents the information about the edges (target site ID and distance) in tuples.
+
+### 4.5 Gui Package
+
+- **interactive_graphics_view.py**
+  - Design custom view classes to manage graphical elements in an object-oriented manner for easy interaction and dynamic updates.
+
+- **main_window_gui_builder.py**
+  - Modular design separates main window and functional components, improving maintainability and extensibility.
+
+- **network_visualization_drawing.py**
+  - Manages visualization elements with lists and dictionaries for efficient rendering and state synchronization.
+
+- **path_analysis_result_display.py**
+  - Result display panel uses tables and lists for easy multi-path comparison.
+
+- **station_interaction_event_handler.py**
+  - Implements an event handler class to manage all user interactions with stations, such as hover, click, add, and remove. Uses object-oriented design to encapsulate interaction logic. Provides real-time feedback (e.g., tooltips, selection, info panel updates).
+
+- **stop_and_route_dialogs_gui.py**
+  - Dialog classes encapsulate data input for better user experience.
+
+- **stop_utilization_display.py**
+  - Uses chart structures to display stop utilization for intuitive analysis.
+
+- **traffic_period_selector.py**
+  - Dropdown menus and dictionary mapping for time period selection, with simple structure.
+
+All designs aim for efficiency, scalability, and maintainability, leveraging Python's built-in data structures (lists, dicts, heaps) to ensure good performance.
+
 ## 5.Project results
 
 ### 5.1 Main Interface
