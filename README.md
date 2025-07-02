@@ -125,6 +125,12 @@ python -m pytest tests/test_network.py
 
 This section presents the overall architecture, detailing the design ideas, rationale, and advantages of key algorithms and data structures in each package and file under /project. 
 
+### System Workflow Diagram
+
+<div align="center">
+    <img src="report_pic/System Workflow Diagram.png">
+</div>
+
 ### 3.1 Algorithm packages
 
 - **coordinate_utils.py**
