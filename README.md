@@ -158,56 +158,38 @@ This section presents the overall architecture, detailing the design ideas, rati
 ### 3.4 Data_structures Package
 
 - **stop_entity.py**
-  - 设计了站点实体类，封装站点属性（ID、类型、坐标等），便于统一管理和扩展。
-  - Defines a stop entity class encapsulating stop attributes (ID, type, coordinates, etc.) for unified management and extensibility.
+  - Defines a stop entity class encapsulating stop attributes (ID, type, coordinates, etc.) for unified management and extensibility.A comparison of stop information is also provided
 
 - **transport_network_structure.py**
-  - 采用邻接表（字典嵌套）实现有向图结构，支持高效的增删查改和遍历操作，是路径算法的基础。
   - Implements a directed graph using adjacency lists (nested dictionaries), supporting efficient add/delete/search/traverse operations, serving as the foundation for path algorithms.
 
-### 3.5 gui 图形界面包
+### 3.5 Gui Package
 
 - **interactive_graphics_view.py**
-  - 设计自定义视图类，采用面向对象方式管理图形元素，便于实现交互和动态更新。
-  - Custom graphics view class using OOP to manage graphical elements for interactive and dynamic updates.
+  - Design custom view classes to manage graphical elements in an object-oriented manner for easy interaction and dynamic updates.
 
 - **main_window_gui_builder.py**
-  - 采用模块化设计，分离主窗口与各功能组件，提升可维护性和扩展性。
   - Modular design separates main window and functional components, improving maintainability and extensibility.
 
 - **network_visualization_drawing.py**
-  - 采用图形项列表和字典管理可视化元素，便于高效渲染和状态同步。
   - Manages visualization elements with lists and dictionaries for efficient rendering and state synchronization.
 
 - **path_analysis_result_display.py**
-  - 设计结果展示面板，采用表格和列表结构，便于多路径对比。
   - Result display panel uses tables and lists for easy multi-path comparison.
 
 - **station_interaction_event_handler.py**
-  - 事件处理采用信号与槽机制，结构清晰，便于扩展。
-  - Event handling uses signal-slot mechanism for clear structure and easy extension.
+  - Implements an event handler class to manage all user interactions with stations, such as hover, click, add, and remove. Uses object-oriented design to encapsulate interaction logic. Provides real-time feedback (e.g., tooltips, selection, info panel updates).
 
 - **stop_and_route_dialogs_gui.py**
-  - 采用对话框类封装数据输入，提升用户体验。
   - Dialog classes encapsulate data input for better user experience.
 
 - **stop_utilization_display.py**
-  - 采用图表结构展示站点利用率，便于直观分析。
   - Uses chart structures to display stop utilization for intuitive analysis.
 
 - **traffic_period_selector.py**
-  - 采用下拉菜单和字典映射实现时段选择，结构简洁。
   - Dropdown menus and dictionary mapping for time period selection, with simple structure.
 
-### 3.6 analysis 数据分析包
-
-- **network_path_analyzer.py**、**stop_utilization_analyzer.py**
-  - 见上文，均采用字典、列表等高效结构，便于统计和分析。
-  - See above; both use efficient structures like dictionaries and lists for statistics and analysis.
-
-> 以上设计均以高效、可扩展、易维护为目标，充分利用Python内置数据结构（如列表、字典、堆）和面向对象思想，确保系统在大规模数据下依然具备良好性能和可读性。
-
-All designs aim for efficiency, scalability, and maintainability, leveraging Python's built-in data structures (lists, dicts, heaps) and OOP principles to ensure good performance and readability even with large-scale data.
+All designs aim for efficiency, scalability, and maintainability, leveraging Python's built-in data structures (lists, dicts, heaps) to ensure good performance.
 
 ## 4.Implementation
 ## 5.Project results
