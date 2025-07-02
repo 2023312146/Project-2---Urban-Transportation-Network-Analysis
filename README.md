@@ -102,4 +102,8 @@ Or run individual test files:
 python -m pytest tests/test_algorithms.py
 python -m pytest tests/test_network.py
 ```
+### Project Division
 
+*   **Wang Tianyi**: Responsible for designing data structures and algorithms, writing the majority of code including algorithms, unit tests, frontend, and the main program. Collaborates on reports and presentations, and assigns tasks to others.
+*   **Dong Che**: Primarily responsible for writing frontend interface code, designing test cases, conducting coverage testing, and collaborating on algorithm design and analysis. Also collaborates on reports and presentations.
+*   **Shao Liangyu**: Tasked with researching algorithms and primarily responsible for writing reports and presentations.
