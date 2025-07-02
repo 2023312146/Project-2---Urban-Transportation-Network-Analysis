@@ -112,16 +112,6 @@ class StopUtilizationAnalyzer:
         return sorted(consolidation_pairs, key=lambda x: x['distance'])
     
     def suggest_new_stops(self, num_suggestions=3):
-        """
-        推荐新站点位置
-        
-        Args:
-            num_suggestions: 推荐站点的数量
-            
-        Returns:
-            推荐站点列表
-        """
-        # 现有站点的安全距离（公里）- 不允许在该范围内添加新站点
         MIN_DISTANCE_TO_EXISTING_STOPS = 1.0  # 1公里安全距离
         
         # 找出高利用率区域

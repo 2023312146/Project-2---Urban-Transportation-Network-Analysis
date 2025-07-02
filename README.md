@@ -142,23 +142,20 @@ This section presents the overall architecture, detailing the design ideas, rati
 - **traffic_condition_manager.py**
   - Manages traffic conditions for peak-hour simulation, using dictionaries to map time periods to traffic factors for dynamic adjustment.
 
-### 3.2 analysis 分析包
+### 3.2 Analysis Package
 
 - **network_path_analyzer.py**
-  - 设计了路径分析器，结合图结构与算法输出，便于综合分析多条路径。
-  - Implements a path analyzer that integrates graph structure and algorithm outputs for comprehensive multi-path analysis.
+  - The path analyzer is designed, which combines the graph structure and dictionary, which is convenient for the comprehensive analysis of multiple paths, the shortest path and the most efficient path, and the point with the highest centrality.
 
 - **stop_utilization_analyzer.py**
-  - 采用字典统计站点利用率和停靠时长，结构简单高效，便于后续可视化和优化建议。
-  - Uses dictionaries to count stop utilization and dwell times, providing a simple and efficient structure for visualization and optimization.
+  - The dictionary is used to count the site utilization rate and stop time during peak periods, including the analysis and calculation of the utilization rate, which is simple and efficient, and is convenient for subsequent visualization and optimization suggestions.
 
-### 3.3 core 核心包
+### 3.3 Core Package
 
 - **csv_network_data_manager.py**
-  - 采用面向对象方式管理CSV数据，内部用邻接表（字典+列表）存储网络结构，便于高效查找和遍历。
-  - Manages CSV data in an object-oriented way, using adjacency lists (dict + list) to store the network structure for efficient lookup and traversal.
+  - Manages CSV data in an object-oriented way. Contains a method for reading underlying stop and route information from a CSV file, using adjacency lists (dict + list) to store the network structure for efficient lookup.
 
-### 3.4 data_structures 数据结构包
+### 3.4 Data_structures Package
 
 - **stop_entity.py**
   - 设计了站点实体类，封装站点属性（ID、类型、坐标等），便于统一管理和扩展。

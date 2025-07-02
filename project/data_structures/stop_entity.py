@@ -6,7 +6,6 @@ class ZoneType(Enum):
     COMMERCIAL = "Commercial"
     INDUSTRIAL = "Industrial"
     MIXED = "Mixed"
-    URBAN = "Urban"
 
 class Stop:
     def __init__(self, stop_ID, name, latitude, longitude, zone_type):
@@ -56,9 +55,6 @@ class Stop:
             "Commercial": ZoneType.COMMERCIAL,
             "Industrial": ZoneType.INDUSTRIAL,
             "Mixed": ZoneType.MIXED,
-            "Urban": ZoneType.URBAN,
-            "urban": ZoneType.URBAN, # Handle lowercase from test
-            "suburban": ZoneType.RESIDENTIAL # Assuming suburban is residential
         }
         # Be more flexible with casing
         zone_key = data['zone_type'].capitalize()

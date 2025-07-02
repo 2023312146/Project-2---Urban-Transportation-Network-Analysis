@@ -44,11 +44,6 @@ class PathAnalyzer:
             } for path, distance in all_paths]
 
     def find_best_path(self, start, end, by_efficiency=False):
-        """
-        查找最优路径
-        :param by_efficiency: True按效率优化，False按距离优化
-        :return: 路径ID列表 or 带效率的字典
-        """
         start_stop = self._get_stop_by_id(start)
         end_stop = self._get_stop_by_id(end)
         
