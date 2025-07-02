@@ -298,8 +298,25 @@ This system supports flexible management of connections between stops in the bus
 - When the user clicks the "Analyse Stop Utilization" button, the system automatically counts the utilization of each stop, including the number of times each stop is visited or passed through in all path analyses. The results are visualized in lists, helping users identify the busiest or least used stops, providing data support for bus scheduling and network optimization.
 - The main logic is in `project/analysis/stop_utilization_analyzer.py`. During path analysis (DFS, shortest path, etc.), the system records all stops visited in each path and accumulates their utilization in a dictionary, then sorts and visualizes the results.
 
+### 5.6 File Operations
 
+This system supports saving bus network data and clearing selection states, ensuring data security and convenient operations for users.
 
+#### 5.6.1 Save data
+<div align="center">
+    <img src="report_pic/Save%20data-1.png">
+</div>
+<div align="center">
+    <img src="report_pic/Save%20data-2.png">
+</div>
+
+- After clicking the "Save Data" button, the system saves the current network structure, stop information, and connection relationships to a local file (e.g., default CSV files) for later loading and analysis.
+- The code uses the data management module (e.g., `core/csv_network_data_manager.py`) to serialize and write data, ensuring data integrity and recoverability.
+
+#### 5.6.2 Clear selection
+
+- After clicking the "Clear Selection" button, the system deselects all currently selected stops, paths, and analysis results, restoring the interface to its initial state for new operations.
+- The event handler resets the interface state, clears related variables, and removes highlights.
 
 ## 6.Division of the project
 
@@ -309,3 +326,12 @@ This system supports flexible management of connections between stops in the bus
 *   **Yixiao Wang**:Actually I don't konw...
 
 ## 7.Summary of the experiment
+Building this bus network analysis system truly made us appreciate the powerful utility of graph theory in practical engineering. By modeling stations as points and routes as edges, the system efficiently calculates the shortest and optimal routes, proving that Dijkstra's algorithm and depth-first search (DFS) are indeed effective in complex networks.
+
+During development, designing reasonable data structures (especially for algorithmic and analytical components) and ensuring smooth user operation flow were two major challenges. We divided the entire system into several modules—separating data, algorithms, and user interface—to avoid conflicts, making the code structure exceptionally clear and easy to modify.
+
+Additionally, converting between geographic coordinates (longitude/latitude) and screen pixel coordinates underscored for us the importance of spatial data processing. The system’s ability to automatically calculate actual distances between stations not only streamlined data entry but also guaranteed result accuracy.
+
+Most importantly, through this project, we genuinely mastered the design and analysis of structures such as stacks, lists, and graphs, while comprehending their underlying principles—for instance, recognizing that stacks operate on a "Last-In-First-Out" basis. This project solidified our knowledge from data structure coursework.
+
+The project also significantly enhanced our ability to develop interfaces using PyQt5. Future enhancements could include integrating real-time traffic data or experimenting with other algorithms to better align with real-world travel scenarios, potentially contributing modestly to Paris public transit planning. Overall, this project transformed theory into practice, laying a solid foundation for developing more complex systems in the future.
