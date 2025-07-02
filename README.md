@@ -193,6 +193,15 @@ All designs aim for efficiency, scalability, and maintainability, leveraging Pyt
 
 ## 4.Implementation
 ## 5.Project results
+
+### 5.1 Main Interface
+
+![Main Interface](report_pic/Main%20interface.png)
+
+The main interface of the Bus Network Path Planning System provides an intuitive and interactive visualization of the urban transport network. Users can manage stops and connections, analyze paths, and view real-time information through a user-friendly GUI.
+
+
+
 ## 6.Division of the project
 
 *   **Tianyi Wang**: Responsible for designing data structures and algorithms, writing the majority of code including algorithms, unit tests, frontend, and the main program. Collaborates on reports and presentations, and assigns tasks to others.
