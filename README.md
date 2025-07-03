@@ -197,19 +197,19 @@ def find_all_paths(network: TransportNetwork, start_stop, end_stop, max_distance
 - **Efficient Updates**: **O(log n) heap operations** for distance updates
 
 
-**Key Implementation / 关键实现**:
+**Key Implementation**:
 ```python
 def dijkstra(network: TransportNetwork, start_stop, end_stop):
     queue = [(0, start_id)] 
     heapq.heapify(queue) 
 ```
 
-**Why Min-Heap? / 为什么选择最小堆？**
-- **Optimal Selection / 最优选择**: Always processes the **most promising node** first
+**Why Min-Heap?**
+- **Optimal Selection**: Always processes the **most promising node** first
 
-- **Efficient Operations / 高效操作**: **O(log n) insert/delete operations**
+- **Efficient Operation**: **O(log n) insert/delete operations**
 
-- **Space Efficiency / 空间效率**: Only stores **unprocessed nodes**
+- **Space Efficiency**: Only stores **unprocessed nodes**
 
 
 #### 3.1.4 path_efficiency_analysis.py
