@@ -130,15 +130,15 @@ python -m pytest tests/test_network.py
 This section presents the overall architecture, detailing the design ideas, rationale, and advantages of key algorithms and data structures in each package and file under /project. 
 
 **Modular Separation of Concerns**
-The system adopts a layered architecture with clear separation between data structures, algorithms, analysis, and presentation layers. This design philosophy ensures:
+The system adopts a **layered architecture** with clear separation between **data structures**, **algorithms**, **analysis**, and **presentation layers**. This **design philosophy** ensures:
 
-- **Maintainability**: Each module has a single responsibility, making code easier to understand and modify
+- **Maintainability**: Each module has a **single responsibility**, making code easier to understand and modify
 
 - **Scalability**: New features can be added without affecting existing modules
 
 - **Testability**: Each component can be tested independently
 
-- **Reusability**: Core algorithms and data structures can be reused across different applications
+- **Reusability**: Core **algorithms** and **data structures** can be reused across different applications
 
 ### System Workflow Diagram
 
@@ -150,11 +150,11 @@ The system adopts a layered architecture with clear separation between data stru
 
 #### 3.1.1 coordinate_utils.py
 **Design Rationale**: 
-- **Centralized Coordinate Management**: All geographic calculations in one place for consistency
+- **Centralized Coordinate Management**: All **geographic calculations** in one place for **consistency**
 
-- **Mathematical Precision**: **Haversine formula** ensures accurate distance calculations across the globe
+- **Mathematical Precision**: **Haversine formula** ensures accurate **distance calculations** across the globe
 
-- **Performance Optimization**: Static methods reduce object creation overhead
+- **Performance Optimization**: **Static methods** reduce **object creation overhead**
 
 
 **Key Implementation**:
@@ -165,244 +165,199 @@ def calculate_haversine_distance(lat1, lon1, lat2, lon2):
 ```
 
 #### 3.1.2 dfs_all_paths_algorithm.py
-**Design Philosophy / 设计理念**: 
-- **Complete Path Enumeration / 完整路径枚举**: Uses stack-based DFS to find all possible paths
-使用基于栈的DFS查找所有可能的路径
-- **Early Pruning / 早期剪枝**: 80km limit prevents impractical path exploration
-80公里限制防止不实用路径的探索
-- **Memory Efficiency / 内存效率**: Stack structure enables efficient backtracking
-栈结构实现高效的回溯
+**Design Philosophy**: 
+- **Complete Path Enumeration**: Uses **stack-based DFS** to find all possible paths
 
-**Key Implementation / 关键实现**:
+- **Early Pruning**: **80km limit** prevents impractical path exploration
+
+- **Memory Efficiency**: **Stack** structure enables efficient **backtracking**
+
+**Key Implementation**:
 ```python
 def find_all_paths(network: TransportNetwork, start_stop, end_stop, max_distance=80):
-    stack = [(start_id, [start_id], 0)]  # (当前节点, 路径, 距离)
-    # 剪枝：超过最大距离的路径被排除
+    stack = [(start_id, [start_id], 0)]
     if max_distance is not None and current_distance > max_distance:
         continue
 ```
 
-**Why Stack over Recursion? / 为什么选择栈而非递归？**
-- **Memory Control / 内存控制**: Explicit stack management prevents stack overflow
-显式栈管理防止栈溢出
-- **Performance / 性能**: Avoids function call overhead for deep searches
-避免深度搜索的函数调用开销
-- **Debugging / 调试**: Easier to trace and debug path exploration
-更容易跟踪和调试路径探索
+**Why Stack over Recursion?**
+- **Memory Control**: **Explicit stack management** prevents **stack overflow**
+
+- **Performance**: Avoids **function call overhead** for deep searches
+
+- **Debugging**: Easier to trace and debug **path exploration**
+
 
 #### 3.1.3 dijkstra_shortest_path_algorithm.py
-**Design Rationale / 设计理由**:
-- **Optimal Path Guarantee / 最优路径保证**: Guarantees shortest path in weighted graphs
-保证加权图中的最短路径
-- **Heap Optimization / 堆优化**: Priority queue ensures optimal node selection
-优先队列确保最优节点选择
-- **Efficient Updates / 高效更新**: O(log n) heap operations for distance updates
-O(log n)堆操作进行距离更新
+**Design Rationale**:
+- **Optimal Path Guarantee**: Guarantees **shortest path** in **weighted graphs**
+
+- **Heap Optimization**: **Priority queue** ensures **optimal node selection**
+
+- **Efficient Updates**: **O(log n) heap operations** for distance updates
+
 
 **Key Implementation / 关键实现**:
 ```python
 def dijkstra(network: TransportNetwork, start_stop, end_stop):
-    queue = [(0, start_id)]  # (距离, 节点ID)
-    heapq.heapify(queue)  # 最小堆
-    # 每次选择距离最小的节点进行扩展
+    queue = [(0, start_id)] 
+    heapq.heapify(queue) 
 ```
 
 **Why Min-Heap? / 为什么选择最小堆？**
-- **Optimal Selection / 最优选择**: Always processes the most promising node first
-总是首先处理最有希望的节点
-- **Efficient Operations / 高效操作**: O(log n) insert/delete operations
-O(log n)插入/删除操作
-- **Space Efficiency / 空间效率**: Only stores unprocessed nodes
-只存储未处理的节点
+- **Optimal Selection / 最优选择**: Always processes the **most promising node** first
+
+- **Efficient Operations / 高效操作**: **O(log n) insert/delete operations**
+
+- **Space Efficiency / 空间效率**: Only stores **unprocessed nodes**
+
 
 #### 3.1.4 path_efficiency_analysis.py
-**Design Philosophy / 设计理念**:
-- **Multi-Criteria Analysis / 多标准分析**: Combines distance and time for comprehensive path evaluation
-结合距离和时间进行综合路径评估
-- **Real-world Relevance / 实际相关性**: Efficiency = Distance/Time reflects actual travel considerations
-效率 = 距离/时间反映实际出行考虑
-- **Comparative Analysis / 比较分析**: Enables comparison between shortest and most efficient paths
-实现最短路径和最高效路径的比较
+**Design Philosophy**:
+- **Multi-Criteria Analysis**: Combines **distance and time** for **comprehensive path evaluation**
+
+- **Real-world Relevance**: **Efficiency = Distance/Time** reflects actual travel considerations
+
+- **Comparative Analysis**: Enables comparison between **shortest and most efficient paths**
+
 
 #### 3.1.5 traffic_condition_manager.py
-**Design Rationale / 设计理由**:
-- **Dynamic Simulation / 动态模拟**: Supports peak-hour traffic simulation
-支持高峰时段交通模拟
-- **Zone-based Modeling / 基于区域的建模**: Different wait times for different zone types
-不同区域类型的不同等待时间
-- **Configurable Parameters / 可配置参数**: Easy adjustment of traffic conditions
-交通条件的轻松调整
+**Design Rationale**:
+- **Dynamic Simulation**: Supports **peak-hour traffic simulation**
+
+- **Zone-based Modeling**: Different **wait times** for different **zone types**
+
+- **Configurable Parameters**: Easy adjustment of **traffic conditions**
+
 
 ### 3.2 Analysis Package
 
 #### 3.2.1 network_path_analyzer.py
-**Design Philosophy / 设计理念**:
-- **Comprehensive Analysis / 综合分析**: Combines multiple path-finding algorithms
-结合多种路径查找算法
-- **Centrality Analysis / 中心性分析**: Identifies most connected nodes in the network
-识别网络中最连接的节点
-- **Performance Metrics / 性能指标**: Provides detailed path comparison metrics
-提供详细的路径比较指标
+**Design Philosophy**:
+- **Comprehensive Analysis**: Combines **multiple path-finding algorithms**
+
+- **Centrality Analysis**: Identifies **most connected nodes** in the network
+
+- **Performance Metrics**: Provides **detailed path comparison metrics**
+
 
 #### 3.2.2 stop_utilization_analyzer.py
-**Design Rationale / 设计理由**:
-- **Operational Insights / 运营洞察**: Analyzes stop usage patterns for optimization
-分析站点使用模式以进行优化
-- **Data-driven Decisions / 数据驱动决策**: Provides quantitative basis for network improvements
-为网络改进提供定量基础
-- **Scalable Analysis / 可扩展分析**: Supports large-scale network analysis
-支持大规模网络分析
+**Design Rationale**:
+- **Data-driven Decisions**: Provides basis for **network improvements**
+
+- **Scalable Analysis**: Supports **large-scale network analysis**
+
 
 ### 3.3 Core Package
 
 #### 3.3.1 csv_network_data_manager.py
-**Design Philosophy / 设计理念**:
-- **Data Persistence / 数据持久化**: Efficient CSV-based data storage and retrieval
-基于CSV的高效数据存储和检索
-- **Object-oriented Interface / 面向对象接口**: Clean API for data operations
-数据操作的简洁API
-- **Error Handling / 错误处理**: Robust handling of malformed data
-对格式错误数据的健壮处理
+**Design Philosophy**:
+- **Data Persistence**: Efficient **CSV-based data storage and retrieval**
+
+- **Object-oriented Interface**: **Clean API** for data operations
 
 ### 3.4 Data_structures Package
 
 #### 3.4.1 stop_entity.py
-**Design Rationale / 设计理由**:
-- **Encapsulation / 封装**: Encapsulates stop attributes for unified management
-封装站点属性以进行统一管理
-- **Comparability / 可比性**: Implements comparison methods for sorting and searching
-实现比较方法以进行排序和搜索
-- **Extensibility / 可扩展性**: Easy to add new stop attributes
-易于添加新的站点属性
+**Design Rationale**:
+- **Encapsulation**: Encapsulates **stop attributes** for **unified management**
+
+- **Comparability**: Implements **comparison methods** for sorting and searching
+
+- **Extensibility**: Easy to add **new stop attributes**
 
 #### 3.4.2 transport_network_structure.py
-**Design Philosophy / 设计理念**:
-- **Graph Theory Foundation / 图论基础**: Implements directed graph with weighted edges
-实现带权有向图
-- **Efficient Operations / 高效操作**: O(1) average time for most graph operations
-大多数图操作的平均O(1)时间
-- **Dynamic Network Support / 动态网络支持**: Real-time add/remove operations
-实时添加/删除操作
+**Design Philosophy**:
+- **Graph Theory Foundation**: Implements **directed graph** with **weighted edges**
 
-**Key Implementation / 关键实现**:
+- **Efficient Operations**: **O(1) average time** for most graph operations
+
+- **Dynamic Network Support**: **Real-time add/remove operations**
+
+**Key Implementation**:
 ```python
 class TransportNetwork:
     def __init__(self):
-        self.adjacency_list = {}      # 正向邻接表
-        self.reverse_adjacency = {}   # 反向邻接表（用于快速反向查找）
-        self.stops = {}               # 站点对象存储
+        self.adjacency_list = {}   
+        self.reverse_adjacency = {} 
+        self.stops = {} 
 ```
 
-**Why Dual Adjacency Lists? / 为什么使用双重邻接表？**
-- **Bidirectional Queries / 双向查询**: Efficient reverse path finding
-高效的反向路径查找
-- **Degree Calculation / 度计算**: Fast calculation of node degrees
-快速计算节点度数
-- **Network Analysis / 网络分析**: Supports comprehensive network metrics
-支持综合网络指标
+**Why Dual Adjacency Lists?**
+- **Bidirectional Queries**: Efficient **reverse path finding**
+
+- **Degree Calculation**: Fast calculation of **node degrees**
+
+- **Network Analysis**: Supports **comprehensive network metrics**
 
 ### 3.5 Gui Package
 
 #### 3.5.1 interactive_graphics_view.py
-**Design Philosophy / 设计理念**:
-- **Object-oriented Graphics / 面向对象图形**: Manages graphical elements as objects
-将图形元素作为对象管理
-- **Event-driven Interaction / 事件驱动交互**: Responsive user interface
-响应式用户界面
-- **Real-time Updates / 实时更新**: Dynamic visualization updates
-动态可视化更新
+**Design Philosophy**:
+- **Object-oriented Graphics**: Manages **graphical elements** as objects
+
+- **Event-driven Interaction**: **Responsive user interface**
+
+- **Real-time Updates**: **Dynamic visualization updates**
 
 #### 3.5.2 main_window_gui_builder.py
-**Design Rationale / 设计理由**:
-- **Modular UI Construction / 模块化UI构建**: Separates UI components for maintainability
-分离UI组件以提高可维护性
-- **Reusable Components / 可重用组件**: Standardized UI building blocks
-标准化的UI构建块
-- **Clean Architecture / 清洁架构**: Clear separation between UI and business logic
-UI和业务逻辑之间的清晰分离
+**Design Rationale**:
+- **Modular UI Construction**: Separates **UI components** for maintainability
+
+- **Reusable Components**: **Standardized UI building blocks**
+
+- **Clean Architecture**: Clear separation between **UI and business logic**
 
 #### 3.5.3 network_visualization_drawing.py
-**Design Philosophy / 设计理念**:
-- **Efficient Rendering / 高效渲染**: Optimized drawing algorithms
-优化的绘图算法
-- **State Management / 状态管理**: Synchronized visualization state
-同步的可视化状态
-- **Color-coded Information / 颜色编码信息**: Intuitive visual representation
-直观的视觉表示
+**Design Philosophy**:
+- **Efficient Rendering**: **Optimized drawing algorithms**
+
+- **State Management**: **Synchronized visualization state**
+
+- **Color-coded Information**: **Intuitive visual representation**
 
 #### 3.5.4 path_analysis_result_display.py
-**Design Rationale / 设计理由**:
-- **Tabular Data Presentation / 表格数据表示**: Clear comparison of multiple paths
-多条路径的清晰比较
-- **Interactive Selection / 交互式选择**: User-friendly path selection
-用户友好的路径选择
-- **Comprehensive Metrics / 综合指标**: Detailed path information display
-详细的路径信息显示
+**Design Rationale**:
+- **Data Presentation**: Clear comparison of **multiple paths**
+
+- **Interactive Selection**: **User-friendly path selection**
+
+- **Comprehensive Metrics**: **Detailed path information display**
 
 #### 3.5.5 station_interaction_event_handler.py
-**Design Philosophy / 设计理念**:
-- **Centralized Event Management / 集中事件管理**: Single point for all station interactions
-所有站点交互的单一入口点
-- **Real-time Feedback / 实时反馈**: Immediate user response
-即时用户响应
-- **State Synchronization / 状态同步**: Consistent UI state across interactions
-交互过程中一致的UI状态
+**Design Philosophy**:
+- **Centralized Event Management**: **Single point** for all station interactions
+
+- **Real-time Feedback**: **Immediate user response**
+
+- **State Synchronization**: **Consistent UI state** across interactions
+
 
 #### 3.5.6 stop_and_route_dialogs_gui.py
-**Design Rationale / 设计理由**:
-- **Data Validation / 数据验证**: Ensures data integrity through input validation
-通过输入验证确保数据完整性
-- **User Experience / 用户体验**: Intuitive data entry interfaces
-直观的数据输入界面
-- **Error Prevention / 错误预防**: Prevents invalid data entry
-防止无效数据输入
+**Design Rationale**:
+- **Data Validation**: Ensures **data integrity** through **input validation**
+
+- **User Experience**: **Intuitive data entry interfaces**
+
+- **Error Prevention**: Prevents **invalid data entry**
 
 #### 3.5.7 stop_utilization_display.py
-**Design Philosophy / 设计理念**:
-- **Visual Analytics / 视觉分析**: Chart-based data representation
-基于图表的数据表示
-- **Insight Discovery / 洞察发现**: Helps identify usage patterns
-帮助识别使用模式
-- **Decision Support / 决策支持**: Provides actionable insights
-提供可操作的洞察
+**Design Philosophy**:
+- **Visual Analytics**: **Chart-based data representation**
+
+- **Insight Discovery**: Helps identify **usage patterns**
+
+- **Decision Support**: Provides **actionable insights**
 
 #### 3.5.8 traffic_period_selector.py
-**Design Rationale / 设计理由**:
-- **Time-based Simulation / 基于时间的模拟**: Supports different traffic scenarios
-支持不同的交通场景
-- **Simple Interface / 简单界面**: Easy period selection
-简单的时段选择
-- **Configurable Parameters / 可配置参数**: Flexible traffic condition settings
-灵活的交通条件设置
+**Design Rationale**:
+- **Time-based Simulation**: Supports **different traffic scenarios**
 
-### 3.6 Performance and Scalability Considerations / 性能和可扩展性考虑
+- **Simple Interface**: **Easy period selection**
 
-**Algorithm Complexity Analysis / 算法复杂度分析**:
-- **Dijkstra's Algorithm / Dijkstra算法**: O((V+E) log V) with binary heap
-使用二叉堆的O((V+E) log V)
-- **DFS Path Enumeration / DFS路径枚举**: O(P·V) where P is number of paths
-O(P·V)，其中P是路径数量
-- **Network Operations / 网络操作**: O(1) average for add/remove operations
-添加/删除操作的平均O(1)
+- **Configurable Parameters**: **Flexible traffic condition settings**
 
-**Memory Optimization Strategies / 内存优化策略**:
-- **Early Pruning / 早期剪枝**: 80km limit prevents memory explosion
-80公里限制防止内存爆炸
-- **Efficient Data Structures / 高效数据结构**: Adjacency lists for sparse graphs
-稀疏图的邻接表
-- **Lazy Loading / 延迟加载**: Load data only when needed
-仅在需要时加载数据
-
-**Scalability Features / 可扩展性特性**:
-- **Modular Architecture / 模块化架构**: Easy to add new algorithms and features
-易于添加新算法和功能
-- **Configurable Parameters / 可配置参数**: Adaptable to different network sizes
-适应不同的网络规模
-- **Real-time Capability / 实时能力**: Supports dynamic network updates
-支持动态网络更新
-
-All designs aim for efficiency, scalability, and maintainability, leveraging Python's built-in data structures (lists, dicts, heaps) to ensure good performance while maintaining code clarity and extensibility.
-所有设计都旨在实现效率、可扩展性和可维护性，利用Python的内置数据结构（列表、字典、堆）来确保良好的性能，同时保持代码的清晰性和可扩展性。
+All designs aim for **efficiency**, **scalability**, and **maintainability**, leveraging Python's **built-in data structures** (lists, dicts, heaps) to ensure good performance while maintaining **code clarity** and **extensibility**.
 
 ## 4.Implementation
 
@@ -619,10 +574,10 @@ This system supports saving bus network data and clearing selection states, ensu
 
 ## 6.Division of the project
 
-*   **Tianyi Wang**: Responsible for designing data structures and algorithms, writing the majority of code including algorithms, unit tests, frontend, and the main program. Collaborates on reports and presentations, and assigns tasks to others.
-*   **Che Dong**: Primarily responsible for writing frontend interface code, designing test cases, conducting coverage testing, and collaborating on algorithm design and analysis. Also collaborates on reports and presentations.
-*   **Liangyu Shao**: Tasked with researching algorithms and primarily responsible for writing reports and presentations.
-*   **Yixiao Wang**:Actually I don't konw...
+*   **Tianyi Wang**: Responsible for designing the data structures and algorithms, writing the majority of the code (including algorithms, unit tests, frontend, and the main program). Collaborated on the report and presentation, and assigned tasks to others.
+*   **Che Dong**: Primarily responsible for writing frontend interface and unit testing code, conducting coverage testing, and collaborating on algorithm design and analysis. Collaborated on completing the report and presentation.
+*   **Liangyu Shao**: Responsible for the manual verification of the algorithms. Collaborated on handling the report and presentation.
+*   **Yixiao Wang**: Actually, I don't know...
 
 ## 7.Summary of the experiment
 Building this bus network analysis system truly made us appreciate the powerful utility of graph theory in practical engineering. By modeling stations as points and routes as edges, the system efficiently calculates the shortest and optimal routes, proving that Dijkstra's algorithm and depth-first search (DFS) are indeed effective in complex networks.
