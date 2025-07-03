@@ -1,5 +1,6 @@
 from project.algorithms.coordinate_utils import CoordinateUtils
 
+# 为了向后兼容，保留原函数名但使用CoordinateUtils实现
 def calculate_haversine_distance(lat1, lon1, lat2, lon2):
     return CoordinateUtils.calculate_haversine_distance(lat1, lon1, lat2, lon2)
 

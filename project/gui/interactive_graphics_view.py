@@ -110,10 +110,10 @@ class CustomGraphicsView(QGraphicsView):
         if hasattr(self.parent, 'interaction_handler'):
             if self.parent.interaction_handler.add_station_mode:
                 self.setCursor(Qt.CrossCursor)  # 十字光标表示添加
-                QToolTip.showText(self.mapToGlobal(self.mapFromScene(self.current_hover_pos)), "点击此处添加新站点")
+                QToolTip.showText(self.mapToGlobal(self.mapFromScene(self.current_hover_pos)), "Click here to add a new site")
             elif self.parent.interaction_handler.remove_station_mode:
                 self.setCursor(Qt.ForbiddenCursor)  # 禁止光标表示删除
-                QToolTip.showText(self.mapToGlobal(self.mapFromScene(self.current_hover_pos)), "点击站点删除它")
+                QToolTip.showText(self.mapToGlobal(self.mapFromScene(self.current_hover_pos)), "Click on the site to delete it")
             else:
                 self.setCursor(Qt.ArrowCursor)  # 默认光标
                 QToolTip.hideText()

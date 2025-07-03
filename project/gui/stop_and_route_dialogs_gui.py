@@ -169,8 +169,8 @@ class DataDialogs:
                                     # 显示警告对话框
                                     msg = QMessageBox()
                                     msg.setIcon(QMessageBox.Warning)
-                                    msg.setWindowTitle("警告")
-                                    msg.setText("此处没有边")
+                                    msg.setWindowTitle("Warning")
+                                    msg.setText("There are no routes here")
                                     msg.setStandardButtons(QMessageBox.Ok)
                                     msg.exec_()
                                     return

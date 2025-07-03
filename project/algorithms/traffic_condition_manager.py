@@ -85,6 +85,10 @@ class TrafficConditionManager:
         return wait_times.get(area_type, wait_times[self.MIXED])
 
     def get_speed(self, area_type: str, is_entering_or_leaving_peak_area=False):
+        """
+        获取指定区域类型的当前运行速度。
+        只有进出高峰区域时速度降为15km/h，否则为正常速度。
+        """
         if is_entering_or_leaving_peak_area and self.period in [self.PEAK_MORNING, self.PEAK_EVENING]:
             return self.PEAK_SPEEDS[self.period]["congested"]
         return self.PEAK_SPEEDS[self.period]["normal"]
@@ -93,6 +97,13 @@ class TrafficConditionManager:
         return self.period 
 
     def get_edge_speed(self, from_area_type: str, to_area_type: str):
+        """
+        获取一条边（from→to）的速度：只要起点或终点是高峰区域，速度都降为15km/h，否则为正常速度。
+        用于路径分析时遍历边，确保进边和出边都降速，且不会重复计算。
+        :param from_area_type: 起点区域类型（字符串）
+        :param to_area_type: 终点区域类型（字符串）
+        :return: 该边的速度（int）
+        """
         if self.get_area_congestion(from_area_type) or self.get_area_congestion(to_area_type):
             return self.PEAK_SPEEDS[self.period]["congested"]
         return self.PEAK_SPEEDS[self.period]["normal"] 

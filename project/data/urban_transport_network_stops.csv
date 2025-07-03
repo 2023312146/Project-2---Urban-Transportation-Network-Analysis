@@ -8,5 +8,3 @@ stop_id,name,latitude,longitude,zone_type
 7,Montparnasse,48.84216,2.321732,RESIDENTIAL
 8,La Defense,48.891342,2.237151,MIXED
 9,Saint-Lazare,48.87561,2.325482,COMMERCIAL
-10,"New Stop (Montparnasse, Saint-Lazare)",48.858885,2.323607,MIXED
-11,Station_11,48.871802124324326,2.292895861730769,MIXED

@@ -222,7 +222,10 @@ class GUIBuilder(QMainWindow):
         if self.selected_start and self.selected_end:
             self.update_path_info()
         
-        # 刷新视图以显示新的等待时间
+        # 清除当前悬停状态，确保悬停提示会更新
+        self.hovered_station = None
+        
+        # 刷新视图以显示新的等待时间和速度
         self.draw_network()
 
     def darken_color(self, hex_color, amount=0.7):

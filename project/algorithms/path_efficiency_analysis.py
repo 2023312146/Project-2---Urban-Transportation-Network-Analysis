@@ -4,6 +4,15 @@ from project.algorithms.traffic_condition_manager import TrafficConditionManager
 # 计算路径效率
 
 def calculate_efficiency(path_stops, total_distance, wait_times: dict, speed: float = 23.0, traffic_manager = None) -> float:
+    """
+    计算路径效率
+    :param path_stops: Stop对象列表
+    :param total_distance: 路径总距离(km)
+    :param wait_times: 各类型站点的等候时间字典
+    :param speed: 行驶速度，默认23km/h
+    :param traffic_manager: 交通状况管理器，用于计算考虑拥堵的等待时间和速度
+    :return: 效率值(km/h)
+    """
     if len(path_stops) < 2:
         return 0.0
     
@@ -33,6 +42,8 @@ def calculate_efficiency(path_stops, total_distance, wait_times: dict, speed: fl
         )
         avg_speed = speed
     
+    if avg_speed <= 0:
+        return 0.0
     travel_time = total_distance / avg_speed
     total_time = travel_time + (wait_time / 60.0)
     return total_distance / total_time if total_time > 0 else 0.0

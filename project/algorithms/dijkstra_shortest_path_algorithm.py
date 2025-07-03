@@ -3,6 +3,14 @@ from project.data_structures.transport_network_structure import TransportNetwork
 import heapq
 
 def dijkstra(network: TransportNetwork, start_stop, end_stop):
+    """
+    使用Dijkstra算法查找两个站点之间的最短路径。
+    :param network: TransportNetwork 对象
+    :param start_stop: 起始 Stop 对象或stop_ID
+    :param end_stop: 终点 Stop 对象或stop_ID
+    :return: 一个元组，包含最短路径（Stop对象列表）和总距离。如果找不到路径，则返回(None, float('inf'))。
+    """
+    # 支持传入Stop对象或stop_ID
     start_id = start_stop.stop_ID if isinstance(start_stop, Stop) else start_stop
     end_id = end_stop.stop_ID if isinstance(end_stop, Stop) else end_stop
     if start_id not in network.adjacency_list or end_id not in network.adjacency_list:

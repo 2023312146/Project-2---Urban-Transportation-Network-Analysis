@@ -60,9 +60,9 @@ class NetworkDataManager:
                     self.station_name_to_id[stop.name] = stop.stop_ID
                     
         except FileNotFoundError:
-            raise FileNotFoundError(f"站点CSV文件未找到: {stops_csv_path}")
+            raise FileNotFoundError(f"Site CSV file not found: {stops_csv_path}")
         except Exception as e:
-            raise Exception(f"加载站点数据时出错: {str(e)}")
+            raise Exception(f"An error occurred while loading site data: {str(e)}")
     
     def _load_routes_from_csv(self, routes_csv_path):
         """
@@ -86,12 +86,12 @@ class NetworkDataManager:
                     if start_stop and end_stop:
                         self.network.add_route(start_stop, end_stop, distance)
                     else:
-                        print(f"警告: 无法找到站点 {start_stop_id} 或 {end_stop_id}")
+                        print(f"Warning: Unable to find site {start_stop_id} or {end_stop_id}")
                         
         except FileNotFoundError:
-            raise FileNotFoundError(f"路线CSV文件未找到: {routes_csv_path}")
+            raise FileNotFoundError(f"The route CSV file was not found: {routes_csv_path}")
         except Exception as e:
-            raise Exception(f"加载路线数据时出错: {str(e)}")
+            raise Exception(f"An error occurred while loading route data: {str(e)}")
     
     def _parse_zone_type(self, zone_type_str):
         zone_type_map = {
@@ -285,4 +285,4 @@ class NetworkDataManager:
                     })
 
         except Exception as e:
-            raise Exception(f"保存失败: {str(e)}")
+            raise Exception(f"Save failed: {str(e)}")

@@ -61,6 +61,8 @@ class StopUtilizationAnalyzer:
     def identify_underutilized_stops(self, threshold=0.3):
         efficiencies = self.calculate_stop_efficiency()
         scores = [score for _, score, _ in efficiencies]
+        if not scores:
+            return []
         min_score = min(scores)
         max_score = max(scores)
         score_range = max_score - min_score
@@ -112,53 +114,52 @@ class StopUtilizationAnalyzer:
         return sorted(consolidation_pairs, key=lambda x: x['distance'])
     
     def suggest_new_stops(self, num_suggestions=3):
+        """
+        推荐新站点位置
+        Args:
+            num_suggestions: 推荐站点的数量
+        Returns:
+            推荐站点列表
+        """
+        # 现有站点的安全距离（公里）- 不允许在该范围内添加新站点
         MIN_DISTANCE_TO_EXISTING_STOPS = 1.0  # 1公里安全距离
-        
         # 找出高利用率区域
         high_utilized = []
         scores = list(self.utilization_scores.values())
+        if not scores:
+            return []
         threshold = np.percentile(scores, 60)  # 降低为前40%的站点都被认为是高利用率
-        
         for stop_id, score in self.utilization_scores.items():
             if score > threshold:
                 stop = self.network.get_stop_by_id(stop_id)
                 high_utilized.append((stop, score))
-        
         # 使用图的社区检测找出潜在的新站点位置
         suggestions = []
         if high_utilized:
             # 排序按利用率从高到低
             high_utilized.sort(key=lambda x: x[1], reverse=True)
-            
             # 针对每个高利用率站点，找出与其相邻但没有直接连接的站点对
             for stop, score in high_utilized[:num_suggestions*2]:  # 增加考虑的高利用率站点数量
                 stop_id = stop.stop_ID
-                
                 # 获取一级连接
                 first_level = set(n_id for n_id, _ in self.network.adjacency_list.get(stop_id, []))
-                
                 # 获取二级连接（一级连接的连接）
                 second_level = set()
                 for n_id in first_level:
                     second_level.update(n2_id for n2_id, _ in self.network.adjacency_list.get(n_id, []))
-                
                 # 移除已经是一级连接的站点
                 second_level -= first_level
                 second_level.discard(stop_id)
-                
                 for s_id in second_level:
                     s_stop = self.network.get_stop_by_id(s_id)
-                    
                     # 计算两个站点之间的中点
                     mid_lat = (stop.latitude + s_stop.latitude) / 2
                     mid_lon = (stop.longitude + s_stop.longitude) / 2
-                    
                     # 计算两站点之间的距离
                     distance = self._calculate_distance(
                         stop.latitude, stop.longitude,
                         s_stop.latitude, s_stop.longitude
                     )
-                    
                     # 如果距离足够大，可能需要一个中间站点
                     if distance > 3.0:  # 降低距离阈值
                         # 检查新站点位置是否远离所有现有站点
@@ -170,10 +171,8 @@ class StopUtilizationAnalyzer:
                                 'connects': [stop.name, s_stop.name],
                                 'score': score * self.utilization_scores.get(s_id, 0) / distance
                             })
-        
         # 按分数排序
         suggestions.sort(key=lambda x: x['score'], reverse=True)
-        
         # 如果没有足够的建议，降低要求再次尝试
         if len(suggestions) < num_suggestions:
             # 再次尝试，这次将距离阈值降至2公里
@@ -181,23 +180,18 @@ class StopUtilizationAnalyzer:
             for stop, score in high_utilized:
                 stop_id = stop.stop_ID
                 first_level = set(n_id for n_id, _ in self.network.adjacency_list.get(stop_id, []))
-                
                 for s_id in self.network.stops.keys():
                     if s_id == stop_id or s_id in first_level:
                         continue
-                        
                     s_stop = self.network.get_stop_by_id(s_id)
-                    
                     # 计算两个站点之间的中点
                     mid_lat = (stop.latitude + s_stop.latitude) / 2
                     mid_lon = (stop.longitude + s_stop.longitude) / 2
-                    
                     # 计算两站点之间的距离
                     distance = self._calculate_distance(
                         stop.latitude, stop.longitude,
                         s_stop.latitude, s_stop.longitude
                     )
-                    
                     # 进一步降低距离阈值
                     if 1.5 < distance < 4.0:  # 距离在1.5-4公里之间
                         # 检查新站点位置是否远离所有现有站点
@@ -209,13 +203,10 @@ class StopUtilizationAnalyzer:
                                 'connects': [stop.name, s_stop.name],
                                 'score': score * 0.8  # 给这些建议一个稍低的分数
                             })
-            
             # 合并建议
             suggestions.extend(additional_suggestions)
             suggestions.sort(key=lambda x: x['score'], reverse=True)
-        
         self.potential_new_stops = suggestions[:num_suggestions]
-        
         return self.potential_new_stops
     
     def optimize_network(self):

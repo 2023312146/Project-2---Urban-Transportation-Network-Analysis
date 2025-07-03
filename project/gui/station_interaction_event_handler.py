@@ -122,8 +122,16 @@ class InteractionHandler:
         if self.traffic_manager and self.traffic_manager.get_area_congestion(station['type'].lower()):
             traffic_status = " (Congested)"
             
-        # 获取运行速度
-        speed = self.traffic_manager.get_speed(station['type'].lower()) if self.traffic_manager else 23
+        # 获取运行速度 - 根据站点是否在拥堵区域来确定速度
+        if self.traffic_manager:
+            zone_type = station['type'].lower()
+            # 如果站点在拥堵区域，显示拥堵速度，否则显示正常速度
+            if self.traffic_manager.get_area_congestion(zone_type):
+                speed = self.traffic_manager.PEAK_SPEEDS[self.traffic_manager.period]["congested"]
+            else:
+                speed = self.traffic_manager.PEAK_SPEEDS[self.traffic_manager.period]["normal"]
+        else:
+            speed = 23
         
         # 返回悬停提示信息，添加连接信息和交通状态
         tooltip_info = (f"Stop: {station['name']}\n"
@@ -214,6 +222,8 @@ class InteractionHandler:
         type_combo.setCurrentText("Residential")  # 默认选择Residential
         layout.addWidget(type_combo)
         
+        # 移除原有的等待时间输入控件（关键修改点）
+        
         # 添加按钮
         button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         button_box.accepted.connect(dialog.accept)
@@ -232,6 +242,8 @@ class InteractionHandler:
             # 自动根据区域类型获取等待时间（通过NetworkDataManager的内部映射）
             zone_type = self.data_manager._convert_string_to_zone_type(station_type)
             wait_time = self.data_manager._get_wait_time(zone_type)
+            
+            # 创建新站点（不再需要手动传递wait_time，由zone_type自动确定）
             self.data_manager.add_station(station_name, x, y, station_type)
         
         # 退出添加模式

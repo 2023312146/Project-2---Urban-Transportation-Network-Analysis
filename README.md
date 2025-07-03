@@ -362,6 +362,12 @@ All designs aim for **efficiency**, **scalability**, and **maintainability**, le
 ## 4.Implementation
 
 This section mainly explains what code features are chosen and how they are implemented.
+Our algorithm has two main structures:
+First, **DFS traverses all paths through the stack structure**. The stack is used to save the nodes, paths, and cumulative distances of the current exploration, and every time a new neighbor is encountered, the new path information is pressed into the top of the stack, and the processing is ejected in turn. This structure is very much in line with the algorithm
+
+secondly，**dijkstra implements the shortest path algorithm with the smallest heap (priority queue)**. The smallest heap pops up the node with the smallest current distance every time, ensuring that each step prioritizes the expansion of the node with the shortest path, greatly improving the search efficiency.
+
+The remaining modules are mainly responsible for data management, structure encapsulation, visual interface, and interaction, and are implemented using object-oriented and common data structures (such as dictionaries, lists, and objects).
 
 ### 4.1 Algorithm packages
 
@@ -370,17 +376,31 @@ This section mainly explains what code features are chosen and how they are impl
   - Both the complexity and the spatial complexity are O(1)
 
 - **dfs_all_paths_algorithm.py**
-  - Traversing all paths, we use DFS in combination with a stack structure。We set a limit max_distance save time and space efficiency, but mainly use the stackThe stack is used to store the information of the current path being explored, and the elements include: the current station, the path traveled, and the cumulative distance.Whenever a new neighbor is reached from the current site, the new path information is pressed into the top of the stack, and then a path branch pops up from the top of the stack each time, and continues to explore the next neighbor of the branch, and the loop continues until the end point is reached, and finally the complete path is recorded.Let's say I'm going from La Defense to Gare de Lyon. Start with La Defense as the first element, press into the stack, and then pop La Defense. Its neighbors are Saint-Lazare and Montparnasse, and the two neighbors are put into the stack [("Saint-Lazare", ["La Defense", "Saint-Lazare"], 8.9), ("Montparnasse", ["La Defense", "Montparnasse"], 5.5)] and the Montparnasse pops up for the second time. Neighbors of Montparnasse and Chatelet,Then put it into the stack ("Chatelet", ["La Defense", "Montparnasse", "Chatelet"], 17.1) Current stack:("Saint-Lazare", ["La Defense", "Saint-Lazare"], 8.9), ("Chatelet", ["La Defense", "Montparnasse", "Chatelet"], 17.1) and so on traverse all paths.
+  - Traversing all paths, we use DFS in combination with a stack structure。We set a limit max_distance save time and space efficiency, but mainly use the stackThe stack is used to store the information of the current path being explored, and the elements include: the current station, the path traveled, and the cumulative distance.Whenever a new neighbor is reached from the current site, the new path information is pressed into the top of the stack, and then a path branch pops up from the top of the stack each time, and continues to explore the next neighbor of the branch, and the loop continues until the end point is reached, and finally the complete path is recorded.**Let's take an example. First, determine the stack. The first item is the ID, the second item is the path list, and the third item is the total path. Next, we put the one with ID 1 onto the stack. Now the stack header is 1. Pop up the stack header to check if its neighbors are 2 and 3. Put it in reverse order onto the stack and update the stack. The current stack header is 3. Pop the stack header to check that its neighbor is 4. Put 4 onto the stack and update. Next, the stack head is 4, and 4 pops up. 4 is the end point. This is a path. There is only 2 left in the stack. Pop 2 from the top of the stack and check that its neighbor is 4. Push 4 onto the stack and update it. Finally, pop 4 again. This is the second path.**
+<div align="center">
+    <img src="report_pic/DFS-1.png">
+</div>
+<div align="center">
+    <img src="report_pic/DFS-2.png">
+</div>
   - The purpose of the adjacency table is to make it easier to find neighbors and go to the service stack.
-  - Both temporal and spatial complexity depend on the number of all simple paths from the start to the end, and at worst it is about O(P·n), where P is the number of paths and n is the number of nodes.
+  - **Time complexity**: O(E·V), where V is the number of nodes and E is the number of all possible paths, because the algorithm needs to traverse each path from the starting point to the end point, and each path may pass through all nodes at the longest.
+  - **The space complexity is the same**: O(E·V) because it is necessary to store the sequence of nodes for all paths in a list.
 
 
 - **dijkstra_shortest_path_algorithm.py**
-  - The smallest heap is used in dijkstra in the code, and the site with the smallest distance is ejected from the smallest heap each time, ensuring that each step processes the node that is currently the most promising to be the shortest path. When a new, shorter path is discovered, the site and the new distance are re-pressed into the heap so that it can be prioritized next time.Let's take an example, first pop La Defense from the heap and check the neighbors: Saint-Lazare, Montparnasse, update the distance to merge into the heap [(5.5, "Montparnasse"), (8.9, "Saint-Lazare")] to see who in the heap is the shortest distance, and then pop up the Montparnasse of the shortest path. Next pop up Montparnasse, go again to detect its neighbor Chatelet merge into the heap [(8.9, "Saint-Lazare"), (17.1, "Chatelet")] to update the distance, then pop up Saint-Lazare again for the shortest path, then look for neighbors, and so on, and finally find the shortest path.
-  - The purpose of the adjacency table is to make it easier to find neighbors and serve the smallest heap.
-  - Each node can enter the heap once and leave the heap once, and the heap operation O(logn) is used. Each edge results in a maximum of one heap insert (update distance) for a total of m edges.So the total time complexity is: O((n+m)logn).
-  - distances is O(n) in the distances dictionary, O(n) in the precursor node dictionary previous_stops, the minimum heap queue is O(n in the worst case), the list for path reconstruction is O(n), and the spatial complexity is O(n) for comprehensive analysis.
+  - The smallest heap is used in dijkstra in the code, and the site with the smallest distance is ejected from the smallest heap each time, ensuring that each step processes the node that is currently the most promising to be the shortest path. **Let's take an exampleWhen a new, shorter path is discovered, the site and the new distance are re-pressed into the heap so that it can be prioritized next time.From 1 to 4: First, put 1 into the heap, pop (0, 1) as the parent, then check its neighbors, which are 2 and 3, compare whose path is smaller (the smaller one becomes the parent), update the heap to have (2, 3) as the parent, pop again, check its neighbor 4, compare the paths of 2 and 4 to see which is smaller, update the heap to have (3, 4) as the parent, pop to reach the endpoint, and the path ends. The several paths that were popped are the minimum paths to the endpoint.**
+<div align="center">
+    <img src="report_pic/DJ-1.png">
+</div>
 
+<div align="center">
+    <img src="report_pic/DJ-2.png">
+</div>
+  -  The purpose of the adjacency table is to make it easier for the minimum heap and dijkstra to find neighbors.
+  -  The purpose of the adjacency table is to make it easier to find neighbors and serve the smallest heap.
+  -  **Time complexity**: Vlog V: Each node has to be "processed" once (heap popped), and each time log V。E log V: Each edge can result in a heap (update distance) each time log V.Sum O((V+E)logV).
+  -  **Space complexity**: The dictionary that records the shortest distance of each node, the dictionary of the predecessor node, the priority queue, and the final path list all need to allocate space to each node, and the total number of nodes is V, and the overall spatial complexity is O(V).
 
 
 - **path_efficiency_analysis.py**
@@ -421,40 +441,57 @@ Functions are used to calculate path efficiency, including lists (path_stops, St
 ### 4.5 Gui Package
 
 - **interactive_graphics_view.py**
-  - Design custom view classes to manage graphical elements in an object-oriented manner for easy interaction and dynamic updates.
+  - By defining the CoordinateUtils utility class, common functions related to geographic coordinates are implemented, including calculating the distance between two points, calculating the distance between sites based on the site dictionary or ID, and converting the coordinates between the geographic coordinates and the GUI interface. The default coordinate boundaries and default view parameters for the Paris metropolitan area are also set in the class.
 
 - **main_window_gui_builder.py**
-  - Modular design separates main window and functional components, improving maintainability and extensibility.
+  -  By defining the 'GUIBuilder' class, the main window interface of the bus network route planning system is implemented. This category has data management, traffic time selection, route analysis, site utilization analysis, interactive network visualization, and the addition, deletion, modification and search functions of stations and lines.
 
 - **network_visualization_drawing.py**
-  - Manages visualization elements with lists and dictionaries for efficient rendering and state synchronization.
+  -  The visualization of the bus network is mainly achieved by defining the 'DrawingModule' class. It leverages PyQt5's QGraphicsScene and related graphical items () to plot sites, routes, routes, arrows, labels, and legends. To do this, the scene and view are initialized first, and then the scene extent is calculated based on the data, traversing all stations and connections, and plotting nodes, edges, paths, distance labels, and type legends respectively.
 
 - **path_analysis_result_display.py**
-  - Result display panel uses tables and lists for easy multi-path comparison.
+  - By defining the PathDisplay class, the display function of the route analysis results of the bus network is realized. Method update_path_info invokes path analysis to find all reachable paths, shortest paths, and most efficient paths based on the currently selected start and end points in the main window, and compares the analysis results. The details of these paths are then formatted into rich text and displayed on the path information panel of the main window.
 
 - **station_interaction_event_handler.py**
-  - Implements an event handler class to manage all user interactions with stations, such as hover, click, add, and remove. Uses object-oriented design to encapsulate interaction logic. Provides real-time feedback (e.g., tooltips, selection, info panel updates).
+  - By defining the 'InteractionHandler' class, the interaction event processing of the stations in the visual interface of the bus network is realized. This class is responsible for handling the user's actions on the interface. Specifically, PyQt5's graphical items and event system are used to detect the relationship between mouse position and site, dynamically display site details, and guide users to enter new site information or confirm deletion through dialog boxes.
 
 - **stop_and_route_dialogs_gui.py**
-  - Dialog classes encapsulate data input for better user experience.
+  - By defining the 'DataDialogs' class, various dialogs and interactions related to stations and routes in the bus network visualization system are implemented. During the implementation, by switching the mode of the main window and the interaction processor, combined with the click event and dialog box input, the user is guided to complete the addition, deletion, modification and search operations of the site and line, and the network visualization interface is automatically refreshed after the operation.
 
 - **stop_utilization_display.py**
-  - Uses chart structures to display stop utilization for intuitive analysis.
+  - By defining the 'StopUtilizationDisplay' class, the results of the site utilization analysis can be visualized. This class inherits from PyQt5's 'QDialog', which displays suggestions for low-utilization, mergeable and new sites in the form of tabs on the interface, and the user will pop up a confirmation dialog box after clicking the button, and interact with the main program through custom signals to delete, merge and add sites.
 
 - **traffic_period_selector.py**
-  - Dropdown menus and dictionary mapping for time period selection, with simple structure.
+  - By defining the 'TrafficPeriodSelector' class, an interface control for switching traffic periods is implemented. This class inherits from PyQt5's 'QWidget' and contains a tab and a drop-down box on the interface that allows the user to select different traffic slots. Whenever the user switches time periods, the drop-down box will trigger a signal and call the traffic manager's methods to update the current time period synchronously, thus affecting the global traffic status and related calculations.
 
-All designs aim for efficiency, scalability, and maintainability, leveraging Python's built-in data structures (lists, dicts, heaps) to ensure good performance.
+The algorithm and analysis module realizes path finding, efficiency analysis and traffic status management through the structure of classes, dictionaries, lists, etc. The core and data structure modules are object-oriented for easy data management and scaling. The GUI module is based on PyQt5 and modularly implements visualization, interaction, and analysis display.
 
-## 5.Project results
+## 5.Code Testing
+In this module, we write test files for all code files to ensure that the code works correctly.
 
-### 5.1 Main Interface
+### 5.1 Test results
+- We divided the corresponding project into the same structure, and each code was tested, and a total of 319 tests were performed. After a series of debugging, all the tests passed.
+<div align="center">
+    <img src="report_pic/Test%20results.png">
+</div>
+
+
+### 5.1 Test Coverage
+- We downloaded the extension to check the test coverage, and later we added a lot of edge tests to further increase the coverage to 95%.
+<div align="center">
+    <img src="report_pic/Test%20Coverage.png">
+</div>
+
+  
+## 6.Project Results
+
+### 6.1 Main Interface
 
 ![Main Interface](report_pic/Main%20interface.png)
 
 The main interface of the Bus Network Path Planning System provides an intuitive and interactive visualization of the urban transport network. Users can manage stops and connections, analyze paths, and view real-time information through a user-friendly GUI.
 
-### 5.2 Route Recommendation
+### 6.2 Route Recommendation
 
 <div align="center">
     <img src="report_pic/Route%20Recommendation-1.png">
@@ -470,10 +507,34 @@ The main interface of the Bus Network Path Planning System provides an intuitive
 
 The system provides comprehensive route recommendation and analysis features. When a user selects a start and end stop, the system enumerates all reachable paths (within a maximum distance of 80km; paths exceeding this threshold are excluded even if technically reachable). For each query, the shortest path (red) and the most efficient path (green, considering both distance and time) are highlighted and compared. All possible paths, their distances, and efficiency metrics are listed for user reference. This is a visual representation of "the shortest path is not the most efficient path", and supports informed decision-making for urban transit planning.
 
-### 5.3 Stop management
+### 6.3 Stations and routes during peak hours
+This system can change the peak hours (such as morning rush hour and evening rush hour), and both the waiting time at the stations and the efficiency of the routes can be adjusted according to the peak hours.
+
+#### 6.3.1 Waiting time changing
+<div align="center">
+    <img src="report_pic/Waiting%20time%20changing-1.png">
+</div>
+- With the arrival of the morning rush hour, the waiting time in residential areas will change (from 2 minutes to 4 minutes)
+
+<div align="center">
+    <img src="report_pic/Waiting%20time%20changing-2.png">
+</div>
+
+<div align="center">
+    <img src="report_pic/Waiting%20time%20changing-3.png">
+</div>
+- With the arrival of the evening rush hour, the waiting time for commercial will change (from 4 minutes to 6 minutes), and that for industrial will also change (from 3 minutes to 5 minutes).
+
+#### 6.3.2 Efficiency changing
+<div align="center">
+    <img src="report_pic/Efficiency%20changing.png">
+</div>
+
+- Changing to the morning rush hour (evening rush hour) will reduce the efficiency of the route.
+### 6.4 Stop management
 This system supports flexible management of stops in the bus network, including adding, removing, and updating stop types, greatly enhancing the flexibility of network modeling and user experience.
 
-#### 5.3.1 Add Stop
+#### 6.4.1 Add Stop
 <div align="center">
     <img src="report_pic/Add%20stop-1.png">
 </div>
@@ -484,11 +545,11 @@ This system supports flexible management of stops in the bus network, including 
 - Users can enter add mode by clicking the "Add Station" button, then click any blank area on the main interface to pop up a dialog, input the stop name and select the type (Residential, Commercial, Industrial, Mixed). The system automatically assigns the wait time.
 - In the code, `station_interaction_event_handler.py` handles click events, dialog input, and data validation to ensure new stops do not overlap with existing ones.
 
-#### 5.3.2 Remove Stop
+#### 6.4.2 Remove Stop
 - After clicking the "Remove Station" button, users can remove a stop by clicking on it; related connections are updated automatically.
 - The code detects the click position via the event handler, calls the data manager to remove the stop and its edges, and refreshes the interface.
 
-#### 5.3.3 Update Stop Type
+#### 6.4.3 Update Stop Type
 <div align="center">
     <img src="report_pic/Update%20stop%20type-1.png">
 </div>
@@ -502,11 +563,11 @@ This system supports flexible management of stops in the bus network, including 
 - Users can update the type of any stop via the "Update Station Type" button; the system automatically adjusts its wait time and visualization color.
 - The relevant code obtains user selection via dialog, updates stop attributes, and reflects changes in the network graph in real time.
 
-### 5.4 Connection management
+### 6.5 Connection management
 
 This system supports flexible management of connections between stops in the bus network, including adding and removing connections, making it easy to dynamically adjust the network structure as needed.
 
-#### 5.4.1 Add Connection
+#### 6.5.1 Add Connection
 <div align="center">
     <img src="report_pic/Add%20connection-1.png">
 </div>
@@ -514,7 +575,7 @@ This system supports flexible management of connections between stops in the bus
 - After clicking the "Add Connection" button, users select the start and end stops in sequence. A dialog pops up to input distance and other information, and a directed edge is added to the network upon confirmation.
 - The code captures user selections via the event handler, updates the adjacency list in the data manager, and refreshes the visualization.
 
-#### 5.4.2 Remove Connection
+#### 6.5.2 Remove Connection
 <div align="center">
     <img src="report_pic/Remove%20connection-2.png">
 </div>
@@ -525,9 +586,9 @@ This system supports flexible management of connections between stops in the bus
 - After clicking the "Remove Connection" button, users select the start and end stops to disconnect, and the system automatically removes the corresponding directed edge.
 - The event handler recognizes user actions, the data manager updates the adjacency list, and the interface is synchronized.
 
-### 5.5 Analytical tools
+### 6.6 Analytical tools
 
-#### 5.5.1 Find highest degree stop
+#### 6.6.1 Find highest degree stop
 <div align="center">
     <img src="report_pic/Find%20Highest%20Degree%20Stop.png">
 </div>
@@ -535,7 +596,7 @@ This system supports flexible management of connections between stops in the bus
 - After clicking the "Find Highest Degree Station" button, the system analyzes and highlights the stop with the most connections in the network.
 - The code traverses the adjacency list, counts the degree of each stop, including both incoming and outgoing connections, and provides real-time feedback.
 
-#### 5.5.2 Analyze stop utilization
+#### 6.6.2 Analyze stop utilization
 <div align="center">
     <img src="report_pic/Stop%20utilization%20analysis-1.png">
 </div>
@@ -552,11 +613,11 @@ This system supports flexible management of connections between stops in the bus
 - When the user clicks the "Analyse Stop Utilization" button, the system automatically counts the utilization of each stop, including the number of times each stop is visited or passed through in all path analyses. The results are visualized in lists, helping users identify the busiest or least used stops, providing data support for bus scheduling and network optimization.
 - The main logic is in `project/analysis/stop_utilization_analyzer.py`. During path analysis (DFS, shortest path, etc.), the system records all stops visited in each path and accumulates their utilization in a dictionary, then sorts and visualizes the results.
 
-### 5.6 File Operations
+### 6.7 File Operations
 
 This system supports saving bus network data and clearing selection states, ensuring data security and convenient operations for users.
 
-#### 5.6.1 Save data
+#### 6.7.1 Save data
 <div align="center">
     <img src="report_pic/Save%20data-1.png">
 </div>
@@ -567,19 +628,19 @@ This system supports saving bus network data and clearing selection states, ensu
 - After clicking the "Save Data" button, the system saves the current network structure, stop information, and connection relationships to a local file (e.g., default CSV files) for later loading and analysis.
 - The code uses the data management module (e.g., `core/csv_network_data_manager.py`) to serialize and write data, ensuring data integrity and recoverability.
 
-#### 5.6.2 Clear selection
+#### 6.7.2 Clear selection
 
 - After clicking the "Clear Selection" button, the system deselects all currently selected stops, paths, and analysis results, restoring the interface to its initial state for new operations.
 - The event handler resets the interface state, clears related variables, and removes highlights.
 
-## 6.Division of the project
+## 7.Division of the project
 
 *   **Tianyi Wang**: Responsible for designing the data structures and algorithms, writing the majority of the code (including algorithms, unit tests, frontend, and the main program). Collaborated on the report and presentation, and assigned tasks to others.
 *   **Che Dong**: Primarily responsible for writing frontend interface and unit testing code, conducting coverage testing, and collaborating on algorithm design and analysis. Collaborated on completing the report and presentation.
 *   **Liangyu Shao**: Responsible for the manual verification of the algorithms. Collaborated on handling the report and presentation.
 *   **Yixiao Wang**: Actually, I don't know...
 
-## 7.Summary of the experiment
+## 8.Summary of the experiment
 Building this bus network analysis system truly made us appreciate the powerful utility of graph theory in practical engineering. By modeling stations as points and routes as edges, the system efficiently calculates the shortest and optimal routes, proving that Dijkstra's algorithm and depth-first search (DFS) are indeed effective in complex networks.
 
 During development, designing reasonable data structures (especially for algorithmic and analytical components) and ensuring smooth user operation flow were two major challenges. We divided the entire system into several modules—separating data, algorithms, and user interface—to avoid conflicts, making the code structure exceptionally clear and easy to modify.

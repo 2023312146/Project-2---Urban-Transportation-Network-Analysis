@@ -303,6 +303,7 @@ class DrawingModule:
                 mw.scene.addItem(text)
 
     def draw_grid(self):
+        """绘制背景网格（50px间隔的浅灰色线）"""
         pen = QPen(QColor(240, 240, 240), 1)  # 浅灰色画笔
         scene_rect = self.main_window.scene.sceneRect()  # 获取场景范围
         
@@ -475,6 +476,17 @@ class DrawingModule:
         mw.scene.addItem(instruction)
 
     def draw_bidirectional_connection(self, from_station, to_station, is_in_best_path, is_in_path, path_index, distance):
+        """
+        绘制双向连接，以左右两条平行线表示出入边
+        
+        Args:
+            from_station: 起始站点数据
+            to_station: 目标站点数据
+            is_in_best_path: 是否在最佳路径中
+            is_in_path: 是否在任意路径中
+            path_index: 路径索引（用于颜色选择）
+            distance: 连接的距离
+        """
         mw = self.main_window
         
         # 计算站点之间的方向向量
