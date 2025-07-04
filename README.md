@@ -119,11 +119,56 @@ To run the test suite:
 python -m pytest tests/
 ```
 
+Or run tests by category:
+
+```bash
+# Run all algorithm tests
+python -m pytest tests/algorithms/
+
+# Run all analysis tests  
+python -m pytest tests/analysis/
+
+# Run all core tests
+python -m pytest tests/core/
+
+# Run all data structure tests
+python -m pytest tests/data_structures/
+
+# Run all GUI tests
+python -m pytest tests/gui/
+```
+
 Or run individual test files:
 
 ```bash
-python -m pytest tests/test_algorithms.py
-python -m pytest tests/test_network.py
+# Algorithm tests
+python -m pytest tests/algorithms/test_coordinate_utils.py
+python -m pytest tests/algorithms/test_dfs_all_paths_algorithm.py
+python -m pytest tests/algorithms/test_dijkstra_shortest_path_algorithm.py
+python -m pytest tests/algorithms/test_distance_calculation.py
+python -m pytest tests/algorithms/test_path_efficiency_analysis.py
+python -m pytest tests/algorithms/test_traffic_condition_manager.py
+
+# Analysis tests
+python -m pytest tests/analysis/test_network_path_analyzer.py
+python -m pytest tests/analysis/test_stop_utilization_analyzer.py
+
+# Core tests
+python -m pytest tests/core/test_csv_network_data_manager.py
+
+# Data structure tests
+python -m pytest tests/data_structures/test_stop_entity.py
+python -m pytest tests/data_structures/test_transport_network_structure.py
+
+# GUI tests
+python -m pytest tests/gui/test_interactive_graphics_view.py
+python -m pytest tests/gui/test_main_window_gui_builder.py
+python -m pytest tests/gui/test_network_visualization_drawing.py
+python -m pytest tests/gui/test_path_analysis_result_display.py
+python -m pytest tests/gui/test_station_interaction_event_handler.py
+python -m pytest tests/gui/test_stop_and_route_dialogs_gui.py
+python -m pytest tests/gui/test_stop_utilization_display.py
+python -m pytest tests/gui/test_traffic_period_selector.py
 ```
 ## 3. The Overall Design
 
